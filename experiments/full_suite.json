@@ -1,0 +1,49 @@
+{
+  "suite_name": "mondrian_cbvf_full_suite_v1",
+  "python": "/home/mars/miniconda3/envs/odp/bin/python3.8",
+  "fixed_seeds": [7, 42, 123, 0, 99],
+  "methods": ["nominal", "cbvf", "cp"],
+  "conditions": {
+    "aligned": {"speed_min": -0.20, "speed": 0.60, "beta_u": 0.80, "cbvf_model_speed_min": -0.20, "cbvf_model_speed": 0.60, "cbvf_model_beta_u": 0.80},
+    "easy": {"speed_min": -0.10, "speed": 0.60, "beta_u": 0.70, "cbvf_model_speed_min": -0.20, "cbvf_model_speed": 0.60, "cbvf_model_beta_u": 0.80},
+    "hard": {"speed_min": 0.00, "speed": 0.60, "beta_u": 0.60, "cbvf_model_speed_min": -0.20, "cbvf_model_speed": 0.60, "cbvf_model_beta_u": 0.80}
+  },
+  "common": {
+    "algorithm": "sac_lag",
+    "max_steps": 250000,
+    "start_training": 25000,
+    "warmup_policy": "reference",
+    "reference_proposal_steps": 75000,
+    "residual_reference_scale": 0.02,
+    "batch_size": 256,
+    "cost_limit": 1.0,
+    "goal_bonus": 750.0,
+    "collision_terminal_penalty": 2500.0,
+    "unsafe_penalty": 25.0,
+    "eval_interval": 25000,
+    "save_interval": 25000,
+    "eval_episodes": 20,
+    "periodic_eval_episodes": 5,
+    "n_calib": 500,
+    "delta": 0.05,
+    "mondrian_clearance_edges": "0.25,0.75,1.50",
+    "dt": 0.05,
+    "horizon": 400,
+    "cbvf_nx": 81,
+    "cbvf_ny": 81,
+    "cbvf_nth": 61,
+    "cbvf_dt": 0.10,
+    "cbvf_terminal_guard": 5.0,
+    "gamma": 0.10,
+    "target_shape": "signed_distance",
+    "cbvf_activate_margin": 0.0,
+    "cp_activate_margin": 0.10,
+    "epsilon_inter": 0.0
+  },
+  "notes": [
+    "This manifest is frozen per suite. Every run stores its exact expanded command and SHA-256 configuration hash.",
+    "epsilon_inter=0 is diagnostic/reproducibility-only until a certified inter-sample value is supplied; FINAL_REPORT must not call it theorem-certified.",
+    "The normalized score is eta/(|grad B dot heading|+|dB/dtheta|); the applied buffer is the regional quantile times that predeclared model-only sensitivity.",
+    "The easy/hard values are a common predefined design across seeds and passed coarse pre-full-run feasibility audits."
+  ]
+}

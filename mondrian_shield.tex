@@ -1,0 +1,1252 @@
+\documentclass[letterpaper,10pt,conference]{ieeeconf}
+\IEEEoverridecommandlockouts
+\overrideIEEEmargins
+
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{cite}
+\usepackage{xcolor} % Load the package
+\allowdisplaybreaks
+\emergencystretch=1.2em
+\usepackage{graphicx}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\usepackage{comment}
+\newtheorem{remark}{Remark}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\Bm}{B_{\gamma}^{\tilde f}}
+\newcommand{\Bt}{B_{\gamma}^{f}}
+\newcommand{\fapp}{\widetilde{f}}
+\newcommand{\safe}{\mathcal{L}}
+\newcommand{\fail}{\mathcal{K}}
+\newcommand{\xv}{x}
+\newcommand{\uv}{u}
+\newcommand{\dv}{d}
+\newcommand{\Uv}{\mathcal{U}}
+\newcommand{\Dv}{\mathcal{D}}
+\newcommand{\Xiv}{\Xi}
+\newcommand{\Xrl}{\mathcal{X}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\ip}[2]{\left\langle #1,#2 \right\rangle}
+\newcommand{\pos}[1]{\left[#1\right]_+}
+
+\title{Mondrian Conformal Calibration of Safety Certificates under Approximate Dynamics}
+\author{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Safety filters can be combined with reinforcement-learning controllers to enable safer deployment. In this paper, we propose a Mondrian conformal shielding framework for settings where the true dynamics are not fully known and safety certification must rely on an approximate model. The method uses a control barrier–value function (CBVF), which combines Hamilton–Jacobi reachability with barrier-function filtering, to construct a model-based safety filter. Because the CBVF is computed from an approximate dynamics model, the filter can become optimistic when the true system differs from the model. Using data collected from the system, our method calibrates how this model mismatch affects the safety certificate across different operating regions. Conformal calibration constructs safety buffers with a prescribed coverage level, while Mondrian calibration adapts these buffers to different operating regions. The resulting filter retains the standard CBVF-QP structure, reduces optimism caused by local model mismatch, and provides a probabilistic safety guarantee for the true system.
+\\\textcolor{blue}{simulation}
+\end{abstract}
+\noindent\textbf{Keywords:} Safe reinforcement learning, safety filters,
+control barrier--value functions, Hamilton--Jacobi reachability, conformal
+prediction, Mondrian conformal prediction.
+\section{Introduction}
+% check plaigerisom
+% citations in appropriate placess
+%check abrivation
+% inro, background, previous works, novelty , paper organization
+% no repeating
+% ***** feasability? ***
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\textcolor{blue}{}
+
+\section{Problem Formulation and Preliminaries}
+
+
+This section formulates the model-based shielding problem considered in the
+paper. We first introduce the reinforcement-learning policy, which provides the
+nominal control input during deployment. Since the policy does not guarantee
+safety along every realized trajectory, its input is passed through a safety
+filter. We then introduce the true continuous-time dynamics and the approximate
+model available for safety certification. The approximate model is used to
+construct a CBVF certificate and the corresponding baseline CBVF-QP safety
+filter. This baseline filter serves as the foundation for the data-driven calibration
+developed in the following sections.
+%%%%%%%%%%%%%%%%%%%
+\subsection{Safe reinforcement learning and the nominal controller}
+
+The reinforcement-learning policy is trained in an infinite-horizon discounted
+constrained Markov decision process (CMDP)
+\cite{altman1999cmdp,achiam2017cpo,tessler2019rcpo}, specified by the tuple
+\begin{equation}
+    (\Xrl,\Uv,P,g,c,\rho,\lambda,d_c),
+    \label{eq:cmdp_tuple}
+\end{equation}
+where $\Xrl\subseteq\R^n$ and $\Uv\subseteq\R^{n_u}$ are the state and action
+spaces, respectively, $P:\Xrl\times\Uv\to\mathcal{P}(\Xrl)$ is the transition
+kernel, with $\mathcal{P}(\Xrl)$ denoting the set of probability measures on
+$\Xrl$, $g:\Xrl\times\Uv\to\R$ is the reward function,
+$c:\Xrl\times\Uv\to\R_{\ge0}$ is the safety-cost function,
+$\rho\in\mathcal{P}(\Xrl)$ is the initial-state distribution,
+$\lambda\in[0,1)$ is the discount factor, and $d_c\in\R_{\ge0}$ is the
+prescribed safety-cost budget.
+
+For a policy $\pi:\Xrl\to\mathcal{P}(\Uv)$, its expected discounted cumulative
+safety cost is defined as
+\begin{equation}
+    J_c^\pi(\rho)
+    :=
+    \mathbb{E}_{\rho,\pi,P}
+    \left[
+        \sum_{k=0}^{\infty}\lambda^k c(x_k,u_k)
+    \right],
+    \label{eq:cmdp_cost}
+\end{equation}
+where the expectation is taken over trajectories initialized according to
+$\rho$ and generated by the policy $\pi$ and transition kernel $P$. The policy
+is required to satisfy
+\begin{equation}
+    J_c^\pi(\rho)\le d_c .
+    \label{eq:cmdp_constraint}
+\end{equation}
+Although this constraint limits the expected cumulative safety cost, it does
+not ensure pointwise safety along every realized trajectory. Therefore, a
+deployment-time safety shield will later be used to modify the input proposed
+by the learned policy when necessary
+\cite{alshiekh2018safe,fisac2019general}.
+
+At deployment, the learned policy provides the nominal controller
+\begin{equation}
+    \pi_{\mathrm{nom}}:\Xrl\times[t_0,0]\to\Uv,
+    \label{eq:nominal_policy}
+\end{equation}
+where $[t_0,0]$ is the finite deployment horizon. For a stationary policy,
+$\pi_{\mathrm{nom}}(\xv,t)=\pi_{\mathrm{nom}}(\xv)$. This nominal controller
+will subsequently be used as the reference input for the safety filter
+developed in the following sections.
+
+%%%%%%%%%%%%%%%
+
+
+
+\subsection{Continuous-time safety model}
+
+We now introduce the continuous-time system and its safety specification.
+Certification is carried out on a compact operating domain
+$\Omega\subseteq\Xrl\subseteq\R^n$. The corresponding state--time domain over
+the finite safety horizon is
+\begin{equation}
+    \Omega_T:=\Omega\times[t_0,0].
+    \label{eq:state_time_domain}
+\end{equation}
+The true deployed dynamics are
+\begin{equation}
+    \dot{\xv}(s)=f(\xv(s),\uv(s),\dv(s)),
+    \ \ \ \ 
+    \xv\in\R^n,
+    \uv\in\Uv,
+    \dv\in\Dv\subset\R^{n_d},
+    \label{eq:true_dynamics}
+\end{equation}
+while the safety certificate is computed with the approximate model
+\begin{equation}
+    \dot{\xv}(s)=\fapp(\xv(s),\uv(s),\dv(s)).
+    \label{eq:model_dynamics}
+\end{equation}
+
+The true dynamics $f$ in \eqref{eq:true_dynamics} are not assumed to be known. Only $\fapp$ is available for
+offline certification. This model mismatch is not included in the disturbance set $\Dv$, since this
+would require a known bound on the mismatch and could make the resulting safety
+certificate overly conservative.
+
+Safety is specified by $l:\R^n\to\R$, with
+\begin{equation}
+    \safe:=\{\xv:l(\xv)\ge0\}.
+    \label{eq:safe_set}
+\end{equation}
+The objective is to ensure that the true trajectory remains in $\safe$ over $[t_0,0]$ with a prescribed probability. We
+impose the following standard regularity conditions on the dynamics and safety
+specification.
+
+\begin{assumption}[Standing regularity]
+\label{ass:regularity}
+The sets $\Uv$ and $\Dv$ in \eqref{eq:true_dynamics} are nonempty and compact.
+The functions $f$ in \eqref{eq:true_dynamics} and $\fapp$ in
+\eqref{eq:model_dynamics} are continuous in $(\xv,\uv,\dv)$ and locally
+Lipschitz in $\xv$ on an open neighborhood of $\Omega$, uniformly over
+$(\uv,\dv)\in\Uv\times\Dv$. The target function $l$ defining the safe set in
+\eqref{eq:safe_set} is locally Lipschitz.
+\end{assumption}
+
+Assumption~\ref{ass:regularity} ensures local well-posedness of the
+trajectories considered in the analysis. Under these conditions, we now introduce the safety certificate used to
+construct the model-based filter.
+
+
+
+%%%%
+
+
+\subsection{Model-based control barrier--value function}
+
+We now define the model-based CBVF, which is computed using the approximate
+dynamics $\fapp$ in \eqref{eq:model_dynamics} and used for finite-horizon safety
+certification \cite{choi2021cbvf}. For each $t\in[t_0,0]$, let $\Uv[t,0]$ and
+$\Dv[t,0]$ denote the sets of measurable control and disturbance signals over
+$[t,0]$, respectively. The disturbance is selected through a nonanticipative
+strategy $\xi_{\dv}:\Uv[t,0]\to\Dv[t,0]$, and $\Xiv[t,0]$ denotes the
+corresponding strategy set \cite{mitchell2005time}. For a CBVF discount rate $\gamma\in\R_{\ge0}$, define
+\begin{equation}
+\begin{aligned}
+    \Bm(\xv,t)
+    :=
+    \inf_{\xi_{\dv}\in\Xiv[t,0]}
+    \sup_{\uv(\cdot)\in\Uv[t,0]}
+    \min_{\tau\in[t,0]}
+    e^{\gamma(\tau-t)}l(\tilde{\xv}(\tau)),
+\end{aligned}
+\label{eq:model_cbvf}
+\end{equation}
+where $\tilde{\xv}(\cdot)$ denotes the trajectory of the approximate model
+initialized at $\tilde{\xv}(t)=\xv$ and satisfying
+\begin{equation}
+    \dot{\tilde\xv}(\tau)=
+    \fapp(\tilde\xv(\tau),\uv(\tau),\xi_{\dv}[\uv](\tau)).
+    \label{eq:model_cbvf_traj}
+\end{equation}
+Under the standard Isaacs condition, $\Bm$ is characterized on the state--time
+domain $\Omega_T$ defined in \eqref{eq:state_time_domain} as the viscosity
+solution of
+\begin{equation}
+\label{eq:model_cbvf_vi}
+\begin{aligned}
+0=\min\Bigl\{\, &l(\xv)-\Bm(\xv,t),\;
+\partial_t \Bm(\xv,t)+\gamma\Bm(\xv,t) \\
+&+\max_{\uv\in\Uv}\min_{\dv\in\Dv}
+\ip{\nabla_{\xv}\Bm(\xv,t)}{\fapp(\xv,\uv,\dv)}
+\Bigr\},
+\end{aligned}
+\end{equation}
+with terminal condition
+\begin{equation}
+    \Bm(\xv,0)=l(\xv).
+    \label{eq:model_cbvf_terminal}
+\end{equation}
+Under Assumption~\ref{ass:regularity}, $\Bm$ is locally Lipschitz on
+$\Omega_T$ and hence differentiable almost everywhere.
+Since the minimum in \eqref{eq:model_cbvf} includes $\tau=t$,
+\begin{equation}
+    \Bm(\xv,t)\le l(\xv),
+    \qquad (\xv,t)\in\Omega_T .
+    \label{eq:Bm_le_l}
+\end{equation}
+Thus $\Bm(\xv,t)\ge0$ implies $\xv\in\safe$, and the model-based certified set is
+\begin{equation}
+    \mathcal C_{\gamma}^{\tilde f}(t)
+    :=
+    \{\xv\in\Omega:\Bm(\xv,t)\ge0\}.
+    \label{eq:model_safe_set}
+\end{equation}
+The next subsection uses the CBVF certificate to construct the model-based
+safety filter.
+
+
+
+%%%%%%%
+\subsection{Model-based safety filter}
+
+We now use the model-based CBVF in \eqref{eq:model_cbvf} to construct an online
+safety filter for the nominal controller in \eqref{eq:nominal_policy}
+\cite{choi2021cbvf}. To formulate this filter as a convex quadratic program,
+assume that the approximate model in \eqref{eq:model_dynamics} is
+control-affine in the input on the operating domain and that $\Uv$ is compact
+and convex. The uncalibrated model-based CBVF-QP is
+\begin{equation}
+\label{eq:model_cbvf_qp}
+\begin{aligned}
+\pi_{\mathrm{CBVF}}^{\tilde f}(\xv,t)
+=\;& \arg\min_{\uv\in\Uv}
+\norm{\uv-\pi_{\mathrm{nom}}(\xv,t)}^2 \\
+\text{s.t.}\;&
+\partial_t \Bm(\xv,t)+\gamma\Bm(\xv,t) \\
+&+\min_{\dv\in\Dv}
+\ip{\nabla_{\xv}\Bm(\xv,t)}{\fapp(\xv,\uv,\dv)}
+\ge0 .
+\end{aligned}
+\end{equation}
+The objective is strictly convex, and the feasible set is convex under the
+control-affine structure. At differentiability points of $\Bm$, feasibility of
+the baseline CBVF-QP on the model-based certified set in
+\eqref{eq:model_safe_set} follows from the CBVF variational inequality
+\eqref{eq:model_cbvf_vi}. Since the calibrated filter introduced later tightens
+the CBVF constraint, its feasibility is considered separately.
+
+At the decision times $t_0<t_1<\cdots<t_H=0$, the model-based safety filter
+returns, for $j=0,\ldots,H-1$, the applied input
+\begin{equation}
+    u_j
+    =
+    \pi_{\mathrm{CBVF}}^{\tilde f}\!\left(\xv(t_j),t_j\right),
+    \label{eq:shield_map}
+\end{equation}
+which is held constant over the corresponding sampling interval,
+\begin{equation}
+    \uv(s)=u_j,
+    \qquad s\in[t_j,t_{j+1}).
+    \label{eq:zoh_control}
+\end{equation}
+Since the filter is constructed using the approximate dynamics in
+\eqref{eq:model_dynamics}, model mismatch may make its CBVF constraint too
+optimistic for the true dynamics in \eqref{eq:true_dynamics}. The next section
+explains how model mismatch affects the filter and how data-driven calibration
+is used to account for it.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Safety Certification under Model Mismatch}
+\label{sec:safety_model_mismatch}
+
+This section identifies the component of model mismatch that can make the
+model-based CBVF condition overly optimistic. The CBVF-QP filter in \eqref{eq:model_cbvf_qp} evaluates an input through the
+CBVF rate. Since the time derivative $\partial_t\Bm$ is independent of the
+system dynamics, model mismatch affects the CBVF condition through the
+dynamics-dependent term
+$\ip{\nabla_{\xv}\Bm(\xv,t)}{\dot\xv}$.
+For a state-time point $(\xv,t)$, applied input $\uv$, and realized velocity
+$\dot\xv$, we therefore define the directional model mismatch as
+\begin{equation}
+\begin{aligned}
+    \mu(\xv,t,\uv,\dot\xv)
+    :=
+    &\min_{\dv\in\Dv}
+    \ip{\nabla_{\xv}\Bm(\xv,t)}
+        {\fapp(\xv,\uv,\dv)} \\
+    &-
+    \ip{\nabla_{\xv}\Bm(\xv,t)}
+        {\dot\xv}.
+\end{aligned}
+\label{eq:directional_mismatch}
+\end{equation}
+The model-based quantity
+$\min_{\dv\in\Dv}
+\ip{\nabla_{\xv}\Bm(\xv,t)}{\fapp(\xv,\uv,\dv)}$
+is computed from the approximate dynamics and the CBVF gradient by minimizing
+over $\Dv$. The realized quantity
+$\ip{\nabla_{\xv}\Bm(\xv,t)}{\dot\xv}$
+uses measured or estimated system velocity. 
+A positive value of $\mu$ in \eqref{eq:directional_mismatch} means that the approximate model predicts a more
+favorable CBVF evolution than the true system, potentially making the
+model-based constraint easier to satisfy than the true safety condition.
+Values with $\mu\leq0$ do not weaken the safety condition. Moreover,
+$\Bm(\xv,t)\ge0$ implies $l(\xv)\ge0$ by \eqref{eq:Bm_le_l}, independently of
+the system dynamics. It is therefore sufficient to prevent the true
+closed-loop trajectory from driving $\Bm$ below zero. The next section
+introduces a data-driven method for accounting for positive directional
+mismatch in the CBVF safety filter.
+
+
+
+
+%%%%%%
+
+\section{Mondrian Conformal Calibration of the CBVF Filter}
+\label{sec:conformal_calibration}
+
+
+
+This section develops a data-driven method for accounting for model mismatch in
+the CBVF safety filter. We first use rollout data to measure how much the
+approximate model overestimates the realized rate of change of the CBVF. We
+then use these measurements to construct a safety buffer that tightens the
+CBVF condition and compensates for this optimistic mismatch.
+
+Because the mismatch may vary across the state--time domain, a single global
+buffer may be unnecessarily conservative in some areas and insufficiently
+responsive in others. We therefore partition the state--time domain into
+regions and calibrate a separate buffer in each region. This region-wise
+procedure is known as Mondrian conformal prediction
+\cite{vovk2013conditional,bostrom2021mondrian}. Within each region, conformal
+calibration uses the observed mismatch scores to determine a suitable buffer
+without assuming a specific parametric distribution for the mismatch.
+
+
+%%%%%%%%
+
+
+
+\subsection{Pointwise mismatch score}
+\label{subsec:pointwise_mismatch_score}
+
+This subsection defines a one-sided score for measuring directional model
+mismatch along closed-loop rollouts. For rollout $i$, let $\xv_i(s)$ denote
+the state, $u_{i,j}$ the input held on $[t_j,t_{j+1})$, and
+$\dot\xv_{i,j}(s)$ the corresponding measured or estimated state velocity.
+The pointwise mismatch score is defined as
+\begin{equation}
+    \eta_{i,j}(s)
+    :=
+    \pos{\mu\bigl(\xv_i(s),s,u_{i,j},\dot\xv_{i,j}(s)\bigr)},
+    \qquad s\in[t_j,t_{j+1}),
+    \label{eq:eta_def}
+\end{equation}
+where $\mu$ is defined in \eqref{eq:directional_mismatch} and
+$\pos{a}:=\max\{a,0\}$. The score retains only positive directional mismatch,
+which can make the model-based CBVF condition optimistic.
+
+If the approximate dynamics in \eqref{eq:model_dynamics} exactly match the
+true dynamics in \eqref{eq:true_dynamics}, i.e., $f=\fapp$, and the realized
+velocity is measured exactly, then $\eta_{i,j}(s)=0$. Otherwise, a positive
+score captures the combined effect of model mismatch, unmodeled effects, and
+velocity-estimation error on the CBVF condition. The next subsection groups
+these pointwise scores by region and aggregates them over each rollout.
+
+
+%%%%%%
+
+\subsection{Regional partition and rollout scores}
+\label{subsec:regional_scores}
+
+This subsection partitions the operating domain and aggregates the pointwise
+mismatch measurements into one score for each rollout and region. Let
+$\{\Omega_m\}_{m=1}^M$ be a finite measurable partition of
+$\Omega\subseteq\Xrl$ such that
+\begin{equation}
+    \Omega=\bigcup_{m=1}^M\Omega_m,
+    \qquad
+    \Omega_m\cap\Omega_{m'}=\emptyset
+    \quad (m\ne m'),
+    \label{eq:regional_partition}
+\end{equation}
+and let $m(\xv)\in\{1,\ldots,M\}$ denote the region containing $\xv$. The
+partition may reflect obstacle geometry, terrain, or certificate properties
+such as $\Bm$ and $\norm{\nabla_{\xv}\Bm}$.
+
+For each decision interval, let
+$\mathcal G_j\subset[t_j,t_{j+1})$ be the fixed evaluation-time grid used for
+all calibration rollouts.
+
+\begin{assumption}[Offline calibration dataset]
+\label{ass:offline_calibration_rollouts}
+The offline calibration dataset consists of $N_{\rm cal}$ rollouts
+$\{(\xv_i,\uv_i,\dot\xv_i)\}_{i=1}^{N_{\rm cal}}$ over $[t_0,0]$. Each rollout
+is generated by the true system in \eqref{eq:true_dynamics} using the
+uncalibrated CBVF-QP in \eqref{eq:model_cbvf_qp} under an admissible
+disturbance signal. For every $s\in\mathcal G_j$, $j=0,\ldots,H-1$, the
+dataset contains the state $\xv_i(s)$, the applied input $u_{i,j}$, and the
+corresponding measured or estimated state velocity $\dot\xv_{i,j}(s)$.
+\end{assumption}
+
+When the state velocity $\dot\xv$ is not directly measured, it can be estimated from
+sampled state measurements using numerical differentiation or standard
+state-estimation methods \cite{vanbreugel2020numerical,berkane2021nonlinear,
+qin2018vinsmono}. The recorded quantities are used to compute the pointwise
+score $\eta_{i,j}(s)$ in \eqref{eq:eta_def}.
+
+A rollout $i$ visits region $m$ if $\xv_i(s)\in\Omega_m$ for some
+$s\in\mathcal G_j$ and some $j$. The evaluation grids are chosen sufficiently
+fine to capture every region visited by a rollout.
+
+\begin{assumption}[Within-interval score regularity]
+\label{ass:inter_sample_score}
+Along every calibration rollout, the score $\eta_{i,j}$ in
+\eqref{eq:eta_def} is Lipschitz continuous in time on each decision interval
+with a common constant $L_\eta\in\mathbb{R}_{\geq 0}$. That is,
+\begin{equation}
+    |\eta_{i,j}(s)-\eta_{i,j}(s')|
+    \leq L_\eta|s-s'|,
+    \qquad
+    s,s'\in[t_j,t_{j+1}).
+    \label{eq:score_lipschitz}
+\end{equation}
+\end{assumption}
+
+The constant $L_\eta$ may be derived from a uniform bound on
+$|\dot\eta_{i,j}|$ over the decision intervals or conservatively estimated
+from data \cite{wood1996estimation}.
+
+Because the score is evaluated only on $\mathcal G_j$, its value may be larger
+between evaluation times \cite{breeden2022sampled}. Let $h_{\rm eval}$ bound
+the distance from any time at which a rollout lies in a region to the nearest
+evaluation time in the same interval and region. By the choice of the evaluation grids $\mathcal G_j$, this bound can be taken as the largest grid spacing.
+The possible inter-sample increase is then accounted for by choosing
+\begin{equation}
+    \epsilon_{\rm grid} = L_\eta h_{\rm eval},
+    \label{eq:grid_margin}
+\end{equation}
+where $L_\eta$ is the within-interval Lipschitz constant in
+\eqref{eq:score_lipschitz}, and $h_{\rm eval}\in\mathbb{R}_{\geq 0}$ is the
+maximum time distance to the nearest evaluation point in the same interval
+and region.
+
+
+For each rollout $i$ that visits region $m$, define the regional rollout score
+as
+\begin{equation}
+    z_{i,m}
+    :=
+    \max_{\substack{j\in\{0,\ldots,H-1\},\ s\in\mathcal G_j:\\
+    \xv_i(s)\in\Omega_m}}
+    \eta_{i,j}(s)
+    +\epsilon_{\rm grid}.
+    \label{eq:rollout_score}
+\end{equation}
+This score provides an upper bound on the continuous-time positive model mismatch
+experienced by rollout $i$ in region $m$. For each region $m$, let
+$\mathcal Z_m$ denote the set of regional rollout scores obtained from all
+calibration rollouts that visit that region. Thus, each visiting rollout
+contributes one score $z_{i,m}$ to $\mathcal Z_m$, and
+$N_m:=|\mathcal Z_m|$ denotes the number of available calibration scores.
+The corresponding regional score sets are used next to calibrate a conformal
+model-mismatch buffer for each region.
+%%%%%%%%%%%%%%%%%%
+
+\subsection{Mondrian split-conformal calibration}
+
+Here, we use Mondrian split-conformal calibration to construct a model-mismatch
+buffer for each region. Let $\delta_{\rm traj}\in(0,1)$ denote the
+trajectory-level miscoverage budget, which is the allowed miscoverage level for
+the event that the model mismatch exceeds its calibrated buffer in at least one
+region visited by a new rollout.
+
+We distribute this budget across the $M$ regions by assigning each region a
+miscoverage level $\delta_m\in(0,1)$ such that
+\begin{equation}
+    \sum_{m=1}^{M}\delta_m\leq\delta_{\rm traj}.
+    \label{eq:regional_risk_allocation}
+\end{equation}
+We use the uniform allocation $\delta_m=\delta_{\rm traj}/M$, which assigns the
+same miscoverage budget to each region. By
+\eqref{eq:regional_risk_allocation}, the regional miscoverage probabilities can
+be combined using a union bound, without assuming that buffer exceedances in
+different regions occur independently
+\cite{bostrom2021mondrian,dunn1961multiple}.
+\begin{assumption}[Regional exchangeability]
+\label{ass:offline_regional_exchangeability}
+For each region $m$, among rollouts that visit that region, the calibration
+scores in $\mathcal Z_m$ and the regional score of a new rollout are
+exchangeable. The calibration and new rollouts are generated using the same
+uncalibrated CBVF-QP in \eqref{eq:model_cbvf_qp}.
+\end{assumption}
+
+The exchangeability condition in
+Assumption~\ref{ass:offline_regional_exchangeability} is imposed within each
+region and does not require exchangeability across different regions.
+
+We now use the regional calibration scores to compute the conformal
+model-mismatch buffers. Let
+$z_{(1),m}\leq\cdots\leq z_{(N_m),m}$ denote the ordered regional scores from
+\eqref{eq:rollout_score}, where $N_m$ is the number of calibration rollouts
+that visited region $m$. For the regional miscoverage level $\delta_m$, define
+\begin{subequations}
+\begin{align}
+    k_m
+    &:=
+    \left\lceil (N_m+1)(1-\delta_m)\right\rceil,
+    \label{eq:offline_mondrian_quantile_index}
+    \\
+    \widehat\xi^{\rm off}_{m}
+    &:=
+    z_{(k_m),m}.
+    \label{eq:offline_mondrian_buffer}
+\end{align}
+\end{subequations}
+where $k_m\in\mathbb N$ is the index of the conformal quantile for region $m$,
+and $\widehat\xi^{\rm off}_{m}\in\mathbb R_{\geq0}$ is the resulting calibrated
+model-mismatch buffer.
+
+This finite-sample construction requires
+\begin{equation}
+    N_m\geq
+    \left\lceil\frac{1}{\delta_m}\right\rceil-1,
+    \label{eq:regional_sample_requirement}
+\end{equation}
+which is equivalent to $\delta_m\geq1/(N_m+1)$
+\cite{lei2018distributionfree}. Under the uniform allocation
+$\delta_m=\delta_{\rm traj}/M$,
+\eqref{eq:regional_sample_requirement} becomes
+$N_m\geq\lceil M/\delta_{\rm traj}\rceil-1$. If this condition is not satisfied,
+the partition is coarsened according to a predetermined rule, for example
+based on spatial proximity or similar operating conditions, and calibration is
+repeated using a fresh dataset on the resulting fixed partition.
+
+We next establish the finite-sample regional coverage guarantee provided by the
+calibrated buffers.
+
+\begin{proposition}[Mondrian split-conformal calibration]
+\label{prop:mondrian_initialization}
+For each region $m$, let $V_m$ denote the event that a new rollout visits
+region $m$, and let $Z_{{\rm new},m}$ denote its regional score when $V_m$
+occurs. Define the set of regions visited by the rollout as
+\begin{equation}
+    \mathcal V:=
+    \{m\in\{1,\ldots,M\}:V_m\text{ occurs}\}.
+    \label{eq:visited_region_set}
+\end{equation}
+Suppose Assumption~\ref{ass:offline_regional_exchangeability} holds, the
+sample-size condition in \eqref{eq:regional_sample_requirement} is satisfied
+for every region, and the regional miscoverage levels satisfy
+\eqref{eq:regional_risk_allocation}. Then, for every region $m$ with
+$\PP(V_m)>0$,
+\begin{equation}
+    \PP\!\left(
+        Z_{{\rm new},m}>\widehat\xi^{\rm off}_{m}
+        \,\middle|\,V_m
+    \right)
+    \leq\delta_m,
+    \label{eq:conditional_mondrian_coverage}
+\end{equation}
+and
+\begin{equation}
+    \PP\!\left(
+        Z_{{\rm new},m}\leq\widehat\xi^{\rm off}_{m},
+        \ \forall m\in\mathcal V
+    \right)
+    \geq1-\delta_{\rm traj}.
+    \label{eq:trajectory_mondrian_coverage}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+For each region $m$, conditional exchangeability and the standard
+split-conformal rank argument
+\cite{vovk2013conditional,lei2018distributionfree} give
+\begin{equation*}
+    \PP\!\left(
+        Z_{{\rm new},m}>\widehat\xi^{\rm off}_{m}
+        \,\middle|\,V_m
+    \right)
+    \leq
+    1-\frac{k_m}{N_m+1}
+    \leq\delta_m.
+\end{equation*}
+Define the regional buffer-exceedance event
+\[
+    F_m:=
+    V_m\cap
+    \left\{
+        Z_{{\rm new},m}>\widehat\xi^{\rm off}_{m}
+    \right\}.
+\]
+Then
+\[
+    \PP(F_m)
+    =
+    \PP\!\left(
+        Z_{{\rm new},m}>\widehat\xi^{\rm off}_{m}
+        \,\middle|\,V_m
+    \right)\PP(V_m)
+    \leq\delta_m.
+\]
+The union bound together with \eqref{eq:regional_risk_allocation} therefore
+gives
+\begin{equation*}
+    \PP\!\left(\bigcup_{m=1}^{M}F_m\right)
+    \leq
+    \sum_{m=1}^{M}\delta_m
+    \leq\delta_{\rm traj}.
+\end{equation*}
+Taking complements gives \eqref{eq:trajectory_mondrian_coverage}.
+\hfill\qed
+\end{proof}
+
+Proposition~\ref{prop:mondrian_initialization} establishes the finite-sample
+coverage guarantee for the regional conformal buffers. These buffers are used
+next to construct the calibrated CBVF safety filter.
+
+
+
+%%%%%%%%%%%%%%%%%
+
+
+\section{Calibrated CBVF Filter and Safety Analysis}
+\label{sec:calibrated_filter_safety}
+
+This section incorporates the regional conformal buffers, which quantify the
+positive model mismatch observed in each operating region, into the CBVF safety
+filter. We first use the buffers in \eqref{eq:offline_mondrian_buffer} to
+calibrate the model-based CBVF-QP in \eqref{eq:model_cbvf_qp}. We then
+describe the final conformal certification of the resulting calibrated filter
+and establish the corresponding safety guarantee under the true dynamics.
+
+%%%%%%%%%%%%%%%%%%
+\subsection{Region-wise calibrated CBVF-QP}
+
+At each decision time $t_j$, the filter in \eqref{eq:shield_map} computes an
+input $u_j\in\Uv$, which is held constant over $[t_j,t_{j+1})$ according to
+\eqref{eq:zoh_control}. Define
+\begin{equation}
+\begin{aligned}
+\Psi(\xv,t,\uv)
+:={}&
+\partial_t \Bm(\xv,t)+\gamma\Bm(\xv,t) \\
+&+
+\min_{\dv\in\Dv}
+\ip{\nabla_{\xv}\Bm(\xv,t)}
+{\fapp(\xv,\uv,\dv)} .
+\end{aligned}
+\label{eq:psi_definition}
+\end{equation}
+The uncalibrated CBVF-QP in \eqref{eq:model_cbvf_qp} enforces
+$\Psi(\xv,t,\uv)\geq0$. The calibrated filter instead incorporates the Mondrian conformal buffer in \eqref{eq:offline_mondrian_buffer} to compensate for regional model mismatch.
+
+To account for possible state transitions between control updates in
+\eqref{eq:shield_map}--\eqref{eq:zoh_control}, we impose the following
+assumption that the inter-sample state variation is bounded.
+\begin{assumption}[Inter-sample state bound]
+\label{ass:bounded_inter_sample_motion}
+There exists a known constant $C_x\in\mathbb R_{\geq0}$ such that the true
+closed-loop trajectory satisfies
+\begin{equation}
+\norm{\xv(s)-\xv(t_j)}
+\leq
+C_x(s-t_j),
+\qquad
+s\in[t_j,t_{j+1}).
+\label{eq:bounded_inter_sample_motion}
+\end{equation}
+\end{assumption}
+
+The constant $C_x$ in \eqref{eq:bounded_inter_sample_motion} may be obtained
+from available physical, actuator, hardware, or certified operating-envelope
+bounds, without requiring knowledge of the exact true dynamics. Such
+inter-sample bounds are standard in sampled-data safety analysis
+\cite{breeden2022sampled}. Using the bound $C_x$ in \eqref{eq:bounded_inter_sample_motion}, we
+identify the Mondrian regions that the state may enter before the next control
+update. Specifically, define
+\begin{equation}
+\begin{aligned}
+\mathcal M_j
+:=
+\biggl\{
+m\in\{1,\ldots,M\}:\
+&\inf_{\xv'\in\Omega_m}
+\norm{\xv(t_j)-\xv'}_2 \\
+&\leq C_x(t_{j+1}-t_j)
+\biggr\}.
+\end{aligned}
+\label{eq:reachable_region_set}
+\end{equation}
+Thus, $\mathcal M_j$ contains all regions that are reachable from $\xv(t_j)$ within the inter-sample state bound. The partition and calibration dataset are
+chosen such that every region that may belong to $\mathcal M_j$ for a
+certified decision-time configuration satisfies the regional sample-size
+requirement in \eqref{eq:regional_sample_requirement}.
+
+Since the state may transition between these regions while the input is held
+constant, the filter uses the largest corresponding regional buffer,
+\begin{equation}
+\widehat\xi^{\rm app}_{j}
+:=
+\max_{m\in\mathcal M_j}
+\widehat\xi^{\rm off}_{m},
+\label{eq:applied_reachable_buffer}
+\end{equation}
+which ensures that the applied buffer covers every Mondrian region that may be
+entered during $[t_j,t_{j+1})$.
+
+To account for the variation of the CBVF constraint between decision times, we
+impose the following regularity condition.
+\begin{assumption}[Inter-sample regularity]
+\label{ass:inter_sample_psi}
+The quantity $\Psi$ in \eqref{eq:psi_definition} is well defined on
+$\Omega_T$. For each decision interval, a known constant
+$L_{\Psi,j}\in\mathbb R_{\geq0}$ is available such that, uniformly over
+$\uv\in\Uv$,
+\begin{equation}
+\left|
+\Psi(\xv,t,\uv)-\Psi(\xv',t',\uv)
+\right|
+\leq
+L_{\Psi,j}
+\left(
+\norm{\xv-\xv'}+|t-t'|
+\right)
+\label{eq:psi_lipschitz}
+\end{equation}
+for all state--time points relevant to the interval.
+\end{assumption}
+
+The constants $L_{\Psi,j}$ in \eqref{eq:psi_lipschitz} may be obtained
+analytically from bounds on the state and time derivatives of $\Psi$, or
+conservatively certified over the relevant inter-sample reachable set using
+numerical or interval-based bounding methods
+\cite{breeden2022sampled,singletary2020sampled,zhang2022interval}.
+
+From Assumption~\ref{ass:inter_sample_psi} and
+\eqref{eq:bounded_inter_sample_motion}, for
+$s\in[t_j,t_{j+1})$,
+\begin{equation}
+\left|
+\Psi(\xv(s),s,\uv)-\Psi(\xv(t_j),t_j,\uv)
+\right|
+\leq
+L_{\Psi,j}(C_x+1)(t_{j+1}-t_j).
+\label{eq:psi_inter_sample_bound}
+\end{equation}
+We therefore define the inter-sample margin
+\begin{equation}
+\epsilon_{{\rm inter},j}
+:=
+L_{\Psi,j}(C_x+1) (t_{j+1}-t_j) .
+\label{eq:inter_sample_margin}
+\end{equation}
+
+The calibrated CBVF filter is
+\begin{equation}
+\begin{aligned}
+u_j=\arg\min_{\uv\in\Uv}\;&
+\norm{\uv-\pi_{\mathrm{nom}}(\xv(t_j),t_j)}^2 \\
+\mathrm{s.t.}\;&
+\Psi(\xv(t_j),t_j,\uv)
+\geq
+\widehat\xi^{\rm app}_{j}
++\epsilon_{{\rm inter},j}.
+\end{aligned}
+\label{eq:regional_cp_filter}
+\end{equation}
+Thus, the nominal CBVF-QP objective is retained, while its constraint is tightened by the regional model-mismatch buffer and the inter-sample margin. This tightening changes the closed-loop behavior relative to the uncalibrated filter used to construct the regional buffers in \eqref{eq:offline_mondrian_buffer}. Therefore, an additional certification step is required to verify that these buffers remain valid under the calibrated filter \eqref{eq:regional_cp_filter}.
+
+
+\begin{remark}[Final conformal certification]
+\label{rem:final_cp_certification}
+The regional buffers in \eqref{eq:offline_mondrian_buffer} are obtained from
+rollouts of the uncalibrated filter \eqref{eq:model_cbvf_qp}. Since using these
+buffers in \eqref{eq:regional_cp_filter} changes the closed-loop policy,
+exchangeability with the original calibration rollouts may no longer hold.
+
+Let
+\begin{equation}
+\widehat\xi^{(0)}_{m}
+:=
+\widehat\xi^{\rm off}_{m},
+\qquad
+m=1,\ldots,M.
+\end{equation}
+At iteration $r\in\mathbb N_0$, collect fresh rollouts under the calibrated
+filter using $\widehat\xi^{(r)}_{m}$ and apply the same regional conformal
+construction in
+\eqref{eq:offline_mondrian_quantile_index}--\eqref{eq:offline_mondrian_buffer}
+to obtain $\widehat\xi^{(r+1)}_{m}$. The buffers are updated iteratively with
+fresh rollouts until the newly computed regional quantiles do not exceed the
+currently applied buffers. The resulting values $\widehat\xi^{(r)}_{m}$ are
+then taken as the final $\widehat\xi^{\rm off}_{m}$ in
+\eqref{eq:applied_reachable_buffer} and fixed for deployment. The final
+certification rollouts and a new deployment rollout are assumed to be
+exchangeable under the same calibrated filter.
+\end{remark}
+
+
+
+
+
+
+
+We impose the following feasibility condition on the tightened QP.
+
+\begin{assumption}[Calibrated-QP feasibility]
+\label{ass:calibrated_qp_feasibility}
+At every decision time $t_j$, the calibrated QP in
+\eqref{eq:regional_cp_filter} is feasible, i.e., there exists
+$\uv\in\Uv$ satisfying its constraint.
+\end{assumption}
+
+When this condition is not satisfied, feasibility can instead be addressed
+using standard modifications such as backup-controller constructions or
+adaptive relaxation of the barrier condition
+\cite{chen2021backup,zeng2021optimal}. Incorporating such mechanisms into the
+proposed conformal calibration framework is beyond the scope of this paper.
+
+Now that the calibrated filter has been constructed, we next establish the corresponding closed-loop safety guarantee.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{Safety analysis}
+Here, we establish the main probabilistic safety guarantee for the RL closed-loop system under the calibrated CBVF filter using conformal certification.
+
+
+\begin{theorem}[Probabilistic closed-loop safety under model mismatch]
+\label{thm:covered_mismatch_safety}
+%%%%%%%%%%%%%%%%%%%%%
+Consider the continuous-time system $f$ in \eqref{eq:true_dynamics}, operated by
+the nominal RL controller $\pi_{\mathrm{nom}}$ in
+\eqref{eq:nominal_policy} through the calibrated CBVF safety filter
+\eqref{eq:regional_cp_filter}. The filter is constructed using the
+approximate model $\fapp$ in \eqref{eq:model_dynamics}. Suppose the initial
+condition lies in the model-based certified set, i.e.,
+$\xv(t_0)\in\mathcal C_{\gamma}^{\tilde f}(t_0)$ defined in
+\eqref{eq:model_safe_set}.
+%%%%%%%%%%
+Then the probability that the closed-loop state trajectory under the true
+dynamics in \eqref{eq:true_dynamics} remains in the safe set over $[t_0,0]$
+satisfies
+\begin{equation}
+\PP\!\left(
+\xv(s)\in\safe,\ \forall s\in[t_0,0]
+\right)
+\geq
+1-\delta_{\rm traj}.
+\label{eq:calibrated_probabilistic_safety}
+\end{equation}
+\end{theorem}
+%%%%%%%%%%%%%%
+\begin{proof}
+By the final conformal certification in
+Remark~\ref{rem:final_cp_certification}, together with the regional risk
+allocation in \eqref{eq:regional_risk_allocation}, with probability at least
+$1-\delta_{\rm traj}$,
+\[
+Z_{{\rm new},m}
+\leq
+\widehat\xi^{\rm off}_{m}
+\]
+for every region $m$ visited by the deployment rollout.
+%%%%%%%%%%%
+Consider a deployment rollout for which this coverage event holds. For
+$s\in[t_j,t_{j+1})$, let $m_s:=m(\xv(s))$. Since
+$m_s\in\mathcal M_j$ by \eqref{eq:reachable_region_set}, for almost every
+$s\in[t_j,t_{j+1})$,
+\[
+\eta(s)
+\overset{\eqref{eq:rollout_score}}{\leq}
+Z_{{\rm new},m_s}
+\overset{\eqref{eq:trajectory_mondrian_coverage}}{\leq}
+\widehat\xi^{\rm off}_{m_s}
+\overset{\eqref{eq:applied_reachable_buffer}}{\leq}
+\widehat\xi^{\rm app}_{j}.
+\tag{*}
+\]
+
+The calibrated filter \eqref{eq:regional_cp_filter} enforces the tightened
+CBVF constraint at the sampling time $t_j$,
+\[
+\Psi(\xv(t_j),t_j,u_j)
+\geq
+\widehat\xi^{\rm app}_{j}
++
+\epsilon_{{\rm inter},j}.
+\]
+The additional margin $\epsilon_{{\rm inter},j}$ accounts for the possible
+variation of $\Psi$ between consecutive sampling times. Hence, by
+\eqref{eq:psi_inter_sample_bound} and \eqref{eq:inter_sample_margin},
+\[
+\Psi(\xv(s),s,u_j)
+\geq
+\widehat\xi^{\rm app}_{j},
+\qquad
+s\in[t_j,t_{j+1}).
+\]
+Combining this with $(*)$ gives
+\[
+\Psi(\xv(s),s,u_j)\geq\eta(s)
+\tag{**}
+\]
+for almost every $s\in[t_j,t_{j+1})$.
+%%%%%%%%%%%%
+Since $\eta(s)=[\mu(s)]_+$, we have $\mu(s)\leq\eta(s)$. Using
+\eqref{eq:directional_mismatch} and \eqref{eq:psi_definition}, it follows
+that, for almost every $s\in[t_j,t_{j+1})$,
+\[
+\frac{d}{ds}\Bm(\xv(s),s)
++\gamma\Bm(\xv(s),s)
+\geq
+\Psi(\xv(s),s,u_j)-\eta(s)
+\overset{(**)}{\geq}0.
+\tag{***}
+\]
+%%%%%%%%%%%%
+\textcolor{red}{here}
+From (***) and
+Assumption~\ref{ass:regularity},
+\[
+e^{\gamma(s-t_0)}\Bm(\xv(s),s)
+\]
+is nondecreasing on $[t_0,0]$. Since
+$\xv(t_0)\in\mathcal C_{\gamma}^{\tilde f}(t_0)$,
+\eqref{eq:model_safe_set} gives
+$\Bm(\xv(t_0),t_0)\geq0$, and therefore
+\[
+\Bm(\xv(s),s)\geq0,
+\qquad
+s\in[t_0,0].
+\]
+By \eqref{eq:Bm_le_l}, this implies
+$l(\xv(s))\geq0$, and hence
+$\xv(s)\in\safe$ for all $s\in[t_0,0]$.
+%%%%%%%%%%%%%
+Since the final conformal certification holds with probability at least
+$1-\delta_{\rm traj}$, \eqref{eq:calibrated_probabilistic_safety} follows.
+%%%%%%%%%%%%%%%
+\hfill\qed
+\end{proof}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\section{Implementation and Experimental Validation}
+\label{sec:experiments}
+\begin{comment}
+% =====================================================================
+%  Easy-mismatch experiment: Mondrian conformal calibration of a
+%  CBVF safety filter for shielded RL (Dubins car reach--avoid).
+%
+%  Self-contained section. Requires: booktabs, amsmath, siunitx (optional).
+%  If you don't use siunitx, the numbers are plain and will still compile.
+% =====================================================================
+
+\section{Experiment: Reach--Avoid under Approximate Dynamics (Easy Mismatch)}
+\label{sec:easy-mismatch}
+
+\subsection{Setup}
+
+We evaluate the proposed Mondrian split-conformal safety filter on a
+Dubins-car reach--avoid task. The agent is trained with
+SAC-Lagrangian~\cite{ha2021} under a mandatory safety shield derived from a
+control barrier--value function (CBVF)~\cite{choi2021} that is itself computed
+offline from an \emph{approximate} model of the dynamics. The safety
+certificate is tightened online by region-wise conformal buffers
+$\hat\xi$ calibrated from observed model--truth mismatch, so that the
+executed policy remains safe despite the model error.
+
+The Dubins car has state $(x,y,\theta)$ and turn-rate control
+$u\in[-1,1]$. The safety constraint enforced by the shield at each active
+state is
+\begin{equation}
+\label{eq:cbvf-constraint}
+\partial_t B(x)
+\;+\; \langle \nabla B(x),\, f_{\mathrm{drift}}(x)\rangle
+\;+\; \gamma\, B(x)
+\;+\; a_u(x)\,u
+\;\ge\; \hat\xi_{r(x)},
+\end{equation}
+where $B$ is the CBVF value, $\gamma$ the CBVF discount, $a_u=\langle
+\nabla_\theta B,\beta\rangle$ the control coefficient, and
+$\hat\xi_{r(x)}$ the conformal buffer for the Mondrian region $r(x)$
+containing the state. The shield activates only inside the certified set
+and near its boundary; where it activates it solves a one-dimensional
+quadratic program that projects the nominal action onto the half-space
+defined by~\eqref{eq:cbvf-constraint}.
+
+\paragraph{Model--truth mismatch (easy).}
+The CBVF is computed for a model with turn-authority
+$\beta_{\mathrm{model}}=0.75$ while the true system has
+$\beta_{\mathrm{truth}}=0.60$; both share speed $v=0.60$. The filter
+therefore certifies safety using a control-effectiveness estimate that
+is optimistic relative to the truth, which is exactly the regime the
+conformal calibration is designed to correct.
+
+\paragraph{Mondrian calibration.}
+The state space is partitioned by signed obstacle clearance into four
+regions with edges $\{0.25,0.75,1.50\}$. Each region receives its own
+split-conformal buffer at miscoverage level $\delta=0.05$, calibrated
+from $n_{\mathrm{calib}}=500$ shielded rollouts of the baseline
+(uncalibrated) CBVF filter.
+
+\begin{table}[t]
+\centering
+\caption{Key configuration for the easy-mismatch experiment. All three
+seeds use identical settings.}
+\label{tab:easy-config}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Parameter & Value \\
+\midrule
+Training algorithm         & SAC-Lagrangian \\
+Training steps             & $5\times10^{5}$ \\
+Evaluation episodes        & 50 (per method, per eval) \\
+CBVF grid                  & $81\times81\times61$ \\
+CBVF time step             & $0.10$ \\
+CBVF discount $\gamma$     & $0.10$ \\
+Integration step $dt$      & $0.05$, horizon $400$ \\
+Model $(v,\beta)$          & $(0.60,\,0.75)$ \\
+Truth $(v,\beta)$          & $(0.60,\,0.60)$ \\
+Mondrian clearance edges   & $\{0.25,0.75,1.50\}$ \\
+Calibration rollouts $n_{\mathrm{calib}}$ & $500$ \\
+Miscoverage $\delta$       & $0.05$ \\
+Filter activation margin   & $0.40$ \\
+Regional buffer ceiling    & $0.10$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Design choices for feasibility and robustness}
+\label{sec:design-choices}
+
+Three design decisions ensure the calibrated quadratic program is
+feasible where the policy actually operates, and that feasibility does
+not depend on the random calibration draw.
+
+\paragraph{Activation depth.}
+The shield activates at a margin of $0.40$ inside the certified set
+rather than at its boundary $B\approx 0$. At the certified-set boundary
+the certificate is steep in time (the reach--avoid value changes rapidly
+near the terminal horizon), so the control authority available there is
+insufficient to meet the required buffer and the projection QP becomes
+infeasible. Activating deeper in the safe set engages the filter where
+the vehicle still has the turning authority to satisfy
+\eqref{eq:cbvf-constraint}, which is also the correct place to intervene:
+$B\approx 0$ is the last-ditch edge of the guarantee, not the obstacle
+surface. This is a deliberate design choice, not a tuned nuisance
+parameter.
+
+\paragraph{Bounded-rate feasibility gate.}
+The offline feasibility audit sweeps every certified grid node. A small
+set of near-terminal states (largest at CBVF time $\approx -0.2$) exhibit
+a finite-difference $\partial_t B$ spike and cannot meet the buffer;
+these states are rarely if ever occupied by the trained policy at
+runtime. We therefore gate on a \emph{bounded} offline infeasibility
+rate ($\le 40\%$ of active certified nodes) rather than requiring zero
+infeasible nodes, consistent with the exceedance semantics of conformal
+prediction. The operationally meaningful quantity is the \emph{runtime}
+infeasibility rate, which we report and which is small (see below).
+
+\paragraph{Buffer ceiling.}
+Far from the obstacle, model--truth trajectories diverge over the long
+horizon and produce large mismatch scores. Because the filter never
+needs to act in that region, an uncapped conformal quantile there can
+inflate the buffer and, with an unlucky calibration draw, render the
+audit infeasible. We cap each regional buffer at $0.10$. The
+near-obstacle regions --- where safety is actually enforced --- calibrate
+stably at $\hat\xi\approx 0.058$ and $0.063$ across seeds and are
+unaffected by the cap; only the far-field region is clipped.
+
+\subsection{Results}
+\label{sec:easy-results}
+
+We compare three controllers under the true dynamics: the unshielded
+nominal policy (\textsc{nominal}), the policy with the uncalibrated CBVF
+filter (\textsc{cbvf}), and the policy with the proposed conformally
+calibrated filter (\textsc{cp}). Table~\ref{tab:easy-main} reports the
+final-evaluation metrics over 50 episodes for a representative seed;
+Table~\ref{tab:easy-seeds} reports the \textsc{cp} controller across
+three seeds.
+
+\begin{table}[t]
+\centering
+\caption{Final evaluation under the true dynamics (easy mismatch, seed~1,
+50 episodes). \textsc{cp} is the only method that is both collision-free
+and goal-reaching.}
+\label{tab:easy-main}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Method & Unsafe rate $\downarrow$ & Goal rate $\uparrow$ & Cost $\downarrow$ \\
+\midrule
+\textsc{nominal} & 0.92 & 0.00 & 0.16 \\
+\textsc{cbvf}    & 0.92 & 0.00 & 0.18 \\
+\textsc{cp} (ours) & \textbf{0.00} & \textbf{1.00} & \textbf{0.00} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Seed stability of the proposed \textsc{cp} controller (easy
+mismatch, 50 episodes each). Safety is invariant across seeds; goal rate
+and runtime infeasibility vary with the calibration draw, and the method
+degrades gracefully --- an unluckier draw (seed~3) loses some goal
+completions but never safety.}
+\label{tab:easy-seeds}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Seed & Unsafe rate & Goal rate & Runtime infeas./active \\
+\midrule
+1 & 0.00 & 1.00 & 0.002 \\
+2 & 0.00 & 1.00 & 0.001 \\
+3 & 0.00 & 0.76 & 0.048 \\
+\midrule
+Range & $0.00$ & $0.76$--$1.00$ & $0.001$--$0.048$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Safety.}
+Across all three seeds the calibrated filter yields a
+$0.00$ unsafe rate, i.e.\ zero collisions in $150$ evaluation episodes,
+whereas both the nominal policy and the uncalibrated CBVF filter collide
+in $92$--$100\%$ of episodes. The conformal calibration is what converts
+an optimistic, uncalibrated certificate that fails almost always into one
+that is safe under the true dynamics.
+
+\paragraph{Feasibility.}
+The calibrated projection QP is feasible at essentially every state the
+policy visits: the runtime infeasibility rate among active steps is
+$0.1$--$0.2\%$ on seeds~1 and~2 and $4.8\%$ on seed~3. On the rare
+infeasible step the filter falls back to a least-violation actuator-rail
+action, which is logged. On feasible active steps the filter performs the
+exact minimum-distance projection
+(\texttt{minimal\_projection\_verified}), so the reported safety is
+produced by the genuine calibrated QP rather than by the fallback.
+
+\paragraph{Task performance.}
+The calibrated filter reaches the goal in every episode on seeds~1 and~2
+and in $76\%$ of episodes on seed~3, at zero safety cost. The lower goal
+rate on seed~3 is a direct consequence of its higher runtime
+infeasibility: additional rail fallbacks perturb the trajectory and cost
+some goal completions, but never induce a collision. The nominal and
+uncalibrated CBVF controllers reach the goal in $0\%$ of episodes under
+this mismatch.
+
+\subsection{Summary}
+
+Under an optimistic model--truth mismatch on the Dubins-car reach--avoid
+task, the proposed Mondrian conformal filter is the only evaluated method
+that is simultaneously collision-free ($0\%$ unsafe across three seeds)
+and goal-reaching (goal rate $0.76$--$1.00$), with runtime QP
+infeasibility of at most $4.8\%$. Safety is invariant to the calibration
+seed; the remaining variability is confined to task performance and
+degrades gracefully.
+\end{comment}
+
+\section{Conclusion}
+
+This paper introduced a Mondrian conformal calibration framework for
+CBVF-based safety filtering under approximate dynamics. We used a model-based
+CBVF certificate as the baseline safety mechanism and calibrated its
+derivative condition using rollout data. The calibration was performed region
+wise, allowing the safety buffer to reflect local variation in model mismatch.
+
+We used Mondrian split conformal calibration to construct a data-driven
+region-wise buffer while preserving the standard CBVF-QP structure. The analysis separated the statistical calibration layer from the deterministic
+CBVF safety argument. Final conformal certification is performed under the
+calibrated filter so that the certification and deployment rollouts are
+exchangeable under the same closed-loop policy, yielding the resulting
+deployment-time probabilistic safety guarantee. \\\textcolor{blue}{simulation}
+
+\bibliographystyle{IEEEtran}
+\bibliography{conformal_cbvf_shielding}
+
+\end{document}

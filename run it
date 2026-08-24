@@ -1,0 +1,11 @@
+what to run now
+
+1. Set MONDRIAN_ODP_ROOT and MONDRIAN_SOLVER_FILE to the real optimized_dp and solver locations.
+2. Run the static check:
+   python train/check_shielded_training_workflow.py
+3. Run the QP projection/fallback smoke test:
+   MPLCONFIGDIR=/tmp/mondrian_matplotlib python train/smoke_test_qp_projection.py
+4. Run the complete strict pipeline:
+   bash run_aligned_no_mismatch.sh
+
+See README_FINAL_COMMANDS.md for the 20k QP-feasibility diagnostic command, the short smoke test, and all generated outputs. Do not use the diagnostic fallback override for a final paper result.

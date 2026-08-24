@@ -1,0 +1,1093 @@
+\documentclass[letterpaper,10pt,conference]{ieeeconf}
+\IEEEoverridecommandlockouts
+\overrideIEEEmargins
+\usepackage{xcolor}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{cite}
+\allowdisplaybreaks
+\emergencystretch=1.2em
+\usepackage{graphicx}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\Bm}{B_{\gamma}^{\tilde f}}
+\newcommand{\Bt}{B_{\gamma}^{f}}
+\newcommand{\fapp}{\widetilde{f}}
+\newcommand{\safe}{\mathcal{L}}
+\newcommand{\fail}{\mathcal{K}}
+\newcommand{\xv}{x}
+\newcommand{\uv}{u}
+\newcommand{\dv}{d}
+\newcommand{\Uv}{\mathcal{U}}
+\newcommand{\Dv}{\mathcal{D}}
+\newcommand{\Xiv}{\Xi}
+\newcommand{\Xrl}{\mathcal{X}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\ip}[2]{\left\langle #1,#2 \right\rangle}
+\newcommand{\pos}[1]{\left[#1\right]_+}
+
+\title{Conformal Control Barrier--Value Function Shielding under Approximate Dynamics}
+\author{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% To be added.
+\end{abstract}
+
+\section{Introduction}
+%check abbbrivation being used just once and p
+%safe RL (cite works in rl and explain)
+%without dynamics (model and environment) it may become unsafe , then works that have been done on how to make rl safe, how safty filters work and cite, how safty filters work with known dynamic and cie, also cite cbf, or hj, 
+%explanations on cbf and hj then limitations and cbvf (but just ref to some works and not too deep since i talk about them later ) (connect about needing interaction with theword and dynamic may not be correct) and limitations that led to my work
+%what this work is about and cbvf and novelty and compare to micheles
+%what each section will be 
+
+
+%\subsection{Limitations of Interaction-Only Safety Learning}
+
+%A common line of work connects reachability-based safety analysis with
+%reinforcement learning and suggests that safety certificates can, in principle,
+%be learned from interaction data \cite{fisac2019general,lu2025adaptiveshielding}.
+%This perspective is appealing because it reduces reliance on a complete
+%analytical model of the system and instead attempts to recover a safety value
+%from experience.
+
+%In safety-critical settings, however, relying only on interaction can be
+%difficult. Learning an accurate reachability-style safety object may require
+%large amounts of data, and early exploration can risk trajectories that pass
+%near the boundary of the failure set $\fail$ defined in
+%\eqref{eq:safe_failure_sets}. Avoiding such events often requires conservative
+%initializations or restrictive exploration, which can limit the useful data
+%available for learning.
+
+%For the setting considered here, it is therefore more practical to begin with a
+%model-based certificate and then correct its safety-relevant error. This shifts
+%the burden from learning the entire safety object online to calibrating only the
+%part of the mismatch that can weaken the shielding condition. Intuitively,
+%model errors that move the system away from the unsafe set do not require
+%additional conservatism; the critical errors are those that make the certificate
+%decrease more than the approximate model predicts.
+%%%%%%%%%%%
+%Existing work connects reachability-based safety analysis with reinforcement
+%learning and shows that safety certificates can, in principle, be learned from
+%interaction data \cite{fisac2019general,lu2025adaptiveshielding}. However, in
+%safety-critical settings, learning such certificates only from interaction can
+%require substantial data and may expose the system to unsafe behavior during
+%exploration. Instead of learning a new certificate entirely from data, this
+%paper starts from a model-based CBVF certificate and calibrates the part of the
+%model mismatch that can weaken its online safety condition.
+
+\section{Problem Formulation and Preliminaries}
+
+This section presents the problem formulation used in the proposed conformal
+CBVF shielding framework. We first describe the safe reinforcement-learning
+problem in discrete time, where a policy is trained for task performance while
+accounting for a safety-related cost. Since this expected-cost formulation does
+not by itself prevent unsafe states along individual trajectories, it can result
+in occasional safety violations during deployment. The learned policy is
+therefore used as a nominal controller inside a continuous-time shielding
+framework. We then introduce the continuous-time safety model, including the true dynamics,
+the approximate dynamics available to the shield, and the target function that
+defines the safe and failure sets. Using this model, we formulate the control
+barrier--value function and derive the associated online safety filter. This
+filter provides the model-based baseline that will later be calibrated to
+account for mismatch between the approximate and true dynamics.
+
+%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Safe reinforcement learning and the shielding interface}
+
+The learning problem is modeled as a discounted constrained Markov decision
+process (CMDP) \cite{altman1999cmdp,sutton2018rl}. Let
+$\Xrl\subseteq\R^n$ denote the state space, and let
+$\Uv\subseteq\R^m$ denote the action space. A discounted CMDP is specified by
+\begin{equation}
+    (\Xrl,\Uv,P,r,c,\rho,\lambda,d_c),
+    \label{eq:cmdp_tuple}
+\end{equation}
+where $P$ is the transition kernel, $r:\Xrl\times\Uv\to\R$ is the reward
+function, $c:\Xrl\times\Uv\to\R_{\ge 0}$ is a safety-related cost,
+$\rho\in\mathcal{P}(\Xrl)$ is the initial-state distribution,
+$\lambda\in[0,1)$ is the discount factor, and $d_c\in\R_{\ge 0}$ is the cost
+budget. Let $\pi:\Xrl\to\mathcal{P}(\Uv)$ denote a policy learned by the RL
+agent. The discounted return and discounted cost under $\pi$ are
+\begin{equation}
+\begin{aligned}
+    J_r^\pi(\rho)
+    &:=
+    \mathbb{E}_{\rho}^{\pi}\!\left[\sum_{k=0}^{\infty}\lambda^k r(x_k,u_k)\right],\\
+    J_c^\pi(\rho)
+    &:=
+    \mathbb{E}_{\rho}^{\pi}\!\left[\sum_{k=0}^{\infty}\lambda^k c(x_k,u_k)\right].
+\end{aligned}
+\label{eq:cmdp_objectives}
+\end{equation}
+The CMDP objective is to maximize $J_r^\pi(\rho)$ subject to
+\begin{equation}
+    J_c^\pi(\rho)\le d_c.
+    \label{eq:cmdp_constraint}
+\end{equation}
+In practice, CMDP objectives of the form
+\eqref{eq:cmdp_objectives}--\eqref{eq:cmdp_constraint} are commonly optimized
+using constrained policy-search or Lagrangian safe-RL methods
+\cite{achiam2017cpo,tessler2019rcpo}. The shielding framework below does not
+depend on a particular safe-RL optimizer; it only uses the resulting policy as
+the nominal controller.
+
+The CMDP formulation captures safety through the expected cumulative cost in
+\eqref{eq:cmdp_objectives} and the budget constraint in
+\eqref{eq:cmdp_constraint}. However, this constraint limits the discounted cost
+in expectation, rather than enforcing safety at every state along each realized
+trajectory. Thus, a policy that performs well in the CMDP sense can still
+produce unsafe rollouts during deployment.
+
+This limitation motivates a distinction between the discrete-time learning
+problem and the continuous-time safety model used below. The CMDP formulation
+in \eqref{eq:cmdp_tuple}--\eqref{eq:cmdp_constraint} describes the nominal
+learning problem at decision indices $k$, while the safety analysis is carried
+out for continuous-time trajectories. Along a rollout, the sampled CMDP state
+is identified with the continuous-time state at the corresponding decision
+time, i.e., $x_k=\xv(t_k)$. The action selected by the RL policy is held
+constant between decision times, unless it is modified by the online safety
+filter. This zero-order-hold connection provides the interface between the
+discrete-time learner and the continuous-time system.
+
+At deployment, the stochastic policy $\pi$ is evaluated deterministically, for
+example by using its mean action. We denote the resulting nominal controller by
+\begin{equation}
+    \pi_{\mathrm{nom}}:\R^n\times[t_0,0]\to\Uv,
+    \qquad t_0\in\R_{<0},
+    \label{eq:nominal_policy}
+\end{equation}
+where the interval $[t_0,0]$ is the finite backward-time horizon used in the
+reachability-based safety analysis. The action applied to the system is then
+given by
+\begin{equation}
+    \uv(s)=\phi\!\left(\xv(s),s,\pi_{\mathrm{nom}}(\xv(s),s)\right),
+    \qquad s\in[t_0,0],
+    \label{eq:shield_map}
+\end{equation}
+where $\phi:\R^n\times[t_0,0]\times\Uv\to\Uv$ is the online safety-filter map.
+
+Thus, the RL policy provides the nominal action for task performance, while
+the online safety filter modifies this action only when needed for safety. The
+next subsection makes this interface precise by introducing the continuous-time
+dynamics and safety objective used by the filter.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%% model 
+\subsection{Continuous-time safety model}
+
+We now introduce the continuous-time model used for safety analysis. The true
+system evolves over a finite horizon $[t_0,0]$, with $t_0<0$, according to
+\begin{equation}
+    \dot{\xv}(s)=f\bigl(\xv(s),\uv(s),\dv(s)\bigr),
+    \qquad s\in[t_0,0],
+    \label{eq:true_dynamics}
+\end{equation}
+where
+\begin{equation}
+    \xv(s)\in\R^n,
+    \qquad
+    \uv(s)\in\Uv,
+    \qquad
+    \dv(s)\in\Dv,
+    \qquad
+    \Dv\subset\R^p.
+    \label{eq:spaces}
+\end{equation}
+Here $\Dv$ is a compact disturbance set, and the input set $\Uv$ is as
+introduced in the CMDP formulation in \eqref{eq:cmdp_tuple}.
+
+The safety filter is constructed from an approximate model rather than from the
+true dynamics in \eqref{eq:true_dynamics}. We therefore also consider
+\begin{equation}
+    \dot{\xv}(s)=\fapp\bigl(\xv(s),\uv(s),\dv(s)\bigr).
+    \label{eq:model_dynamics}
+\end{equation}
+The same disturbance set $\Dv$ is used in \eqref{eq:true_dynamics} and
+\eqref{eq:model_dynamics}. The discrepancy between $f$ and $\fapp$ represents
+the safety-relevant modeling error addressed by the calibration step in
+Section~\ref{sec:conformal_calibration}. This modeling error can arise from parametric uncertainty, unmodeled dynamics,
+or other discrepancies between the approximate model and the true system.
+
+We use $\Uv[t_0,0]$ and $\Dv[t_0,0]$ to denote the sets of Lebesgue-measurable
+control and disturbance signals on $[t_0,0]$. As in robust reachability, the
+disturbance may act through a nonanticipative strategy
+$\xi_{\dv}:\Uv[t_0,0]\to\Dv[t_0,0]$, and $\Xiv[t_0,0]$ denotes the set of such
+strategies \cite{choi2021cbvf,mitchell2005time}.
+
+Safety is encoded by a target function $l:\R^n\to\R$, and the safe and failure
+sets are defined by
+\begin{equation}
+\begin{aligned}
+    \safe &:= \{\xv\in\R^n : l(\xv)\ge 0\},\\
+    \fail &:= \{\xv\in\R^n : l(\xv)<0\}.
+\end{aligned}
+\label{eq:safe_failure_sets}
+\end{equation}
+The goal is to keep the true trajectory of \eqref{eq:true_dynamics} inside
+$\safe$ throughout the horizon.
+
+\begin{assumption}[Standing regularity]
+\label{ass:regularity}
+The functions $f$ and $\fapp$ are continuous in $(\xv,\uv,\dv)$, locally
+Lipschitz in $\xv$ uniformly over $(\uv,\dv)\in\Uv\times\Dv$, and bounded on
+compact sets. The target function $l$ is bounded, locally Lipschitz, and
+continuously differentiable on the region where terminal gradients are
+evaluated.
+\end{assumption}
+
+Assumption~\ref{ass:regularity} guarantees existence of trajectories on finite
+horizons and provides the regularity needed for the reachability-based
+certificate developed below. With the continuous-time safety model in place, we
+next formulate the model-based certificate used by the online safety filter.
+
+
+
+
+%%%%% cbvf 
+\subsection{Model-based control barrier--value function}
+
+The safety filter is built from a CBVF
+associated with the approximate model \eqref{eq:model_dynamics}. The CBVF
+construction uses the finite horizon $[t_0,0]$, where $0$ denotes the terminal
+time of the reachability lookahead. The reachability computation is posed
+backward from this terminal time, while trajectories evolve forward in the time
+variable from $t_0$ to $0$.
+
+CBVFs connect Hamilton--Jacobi reachability with barrier-style online filtering
+\cite{choi2021cbvf}. For a discount parameter $\gamma\in\R_{\ge 0}$, define
+\begin{equation}
+\begin{aligned}
+    \Bm(\xv,t)
+    :=
+    \inf_{\xi_{\dv}\in\Xiv[t,0]}
+    \sup_{\uv(\cdot)\in\Uv[t,0]}
+    \min_{r\in[t,0]}
+    e^{\gamma(r-t)}l\bigl(\tilde{\xv}(r)\bigr),
+\end{aligned}
+\label{eq:model_cbvf}
+\end{equation}
+where $t\in[t_0,0]$. When $\gamma=0$, \eqref{eq:model_cbvf} reduces to the
+standard finite-horizon reachability value function. For $\gamma>0$, it gives
+the discounted barrier-value formulation of CBVFs \cite{choi2021cbvf}.
+
+In \eqref{eq:model_cbvf}, the state satisfies $\tilde{\xv}(t)=\xv$, and
+$\tilde{\xv}(\cdot)$ evolves according to
+\begin{equation}
+    \dot{\tilde{\xv}}(r)
+    =
+    \fapp\bigl(
+    \tilde{\xv}(r),
+    \uv(r),
+    \xi_{\dv}[\uv](r)
+    \bigr),
+    \qquad r\in[t,0].
+    \label{eq:model_cbvf_traj}
+\end{equation}
+The trajectory equation \eqref{eq:model_cbvf_traj} uses the approximate
+dynamics in \eqref{eq:model_dynamics} and the nonanticipative disturbance
+strategy introduced above. Under Assumption~\ref{ass:regularity} and the
+comparison results for Hamilton--Jacobi reachability variational inequalities,
+$\Bm$ is characterized as the unique viscosity solution of
+\begin{equation}
+\label{eq:model_cbvf_vi}
+\begin{aligned}
+0=\min\Bigl\{\, &l(\xv)-\Bm(\xv,t),\\
+&\partial_t \Bm(\xv,t) + \gamma \Bm(\xv,t) \\
+&\quad + \max_{\uv\in\Uv}\min_{\dv\in\Dv}
+\ip{\nabla_{\xv}\Bm(\xv,t)}{\fapp(\xv,\uv,\dv)}
+\Bigr\},
+\end{aligned}
+\end{equation}
+with terminal condition
+\begin{equation}
+    \Bm(\xv,0)=l(\xv).
+    \label{eq:model_cbvf_terminal}
+\end{equation}
+This viscosity characterization follows from the standard Hamilton--Jacobi
+reachability construction together with the CBVF formulation
+\cite{mitchell2005time,choi2021cbvf}.
+
+Equation \eqref{eq:model_cbvf_vi} yields a property used throughout the paper:
+\begin{equation}
+    \Bm(\xv,t)\le l(\xv),
+    \qquad \forall (\xv,t)\in\R^n\times[t_0,0],
+    \label{eq:Bm_le_l}
+\end{equation}
+which implies that any point satisfying $\Bm(\xv,t)\ge 0$ is safe with respect
+to the target function $l$ in \eqref{eq:safe_failure_sets}. Accordingly, define
+the zero-superlevel set
+\begin{equation}
+    \mathcal{C}_{\gamma}^{\tilde f}(t)
+    :=
+    \{\xv\in\R^n : \Bm(\xv,t)\ge 0\},
+    \label{eq:model_safe_set}
+\end{equation}
+which is the certified safe region induced by the approximate model
+\eqref{eq:model_dynamics}. This set provides the model-based certificate
+enforced by the safety filter. The next subsection shows how this certificate
+leads to an online filtering problem.
+
+
+%%%%%%%%%%%%%%% safety filter
+\subsection{Model-based safety filter}
+
+The model-based certificate in \eqref{eq:model_safe_set} can be enforced online
+by filtering the nominal action in \eqref{eq:nominal_policy}. At each state and
+time, the filter selects the closest admissible input to the nominal action
+while satisfying the CBVF decrease condition induced by the approximate model
+\eqref{eq:model_dynamics}:
+\begin{equation}
+\label{eq:model_cbvf_qp}
+\begin{aligned}
+\pi_{\mathrm{CBVF}}^{\tilde f}(\xv,t)
+=\;& \arg\min_{\uv\in\Uv}
+\norm{\uv-\pi_{\mathrm{nom}}(\xv,t)}^2 \\
+\text{s.t.}\;&
+\partial_t \Bm(\xv,t) + \gamma \Bm(\xv,t) \\
+&\quad + \min_{\dv\in\Dv}
+\ip{\nabla_{\xv}\Bm(\xv,t)}{\fapp(\xv,\uv,\dv)}
+\ge 0.
+\end{aligned}
+\end{equation}
+Under bounded input constraints, feasibility of \eqref{eq:model_cbvf_qp} can
+depend on the current state and time. The filter is therefore interpreted on
+the region where the constraint admits at least one admissible input.
+
+When the approximate model \eqref{eq:model_dynamics} is control-affine in
+$\uv$ and $\Uv$ is a compact convex input set, such as a box or polytope of
+actuator limits, the constraint in \eqref{eq:model_cbvf_qp} is affine in
+$\uv$. The online problem is then a quadratic program. As in standard
+CBF-based safety filters, the optimizer returns the nominal input whenever
+$\pi_{\mathrm{nom}}(\xv,t)$ already satisfies the safety condition
+\cite{ames2019cbf,choi2021cbvf}.
+
+The filter is implemented at decision times
+\begin{equation}
+    t_0<t_1<\cdots<t_H=0,
+    \label{eq:decision_times}
+\end{equation}
+where $H\in\N$, and the chosen control is held constant on each interval
+$[t_j,t_{j+1})$. This provides the interface to the nominal controller in
+\eqref{eq:nominal_policy}. Since the derivative condition in
+\eqref{eq:model_cbvf_qp} is enforced only at decision times, the zero-order-hold
+implementation introduces a sampled-data gap between the continuous-time
+analysis and the implemented filter.
+
+This formulation remains model-dependent, since the certificate enforced in
+\eqref{eq:model_cbvf_qp} is constructed from the approximate dynamics
+\eqref{eq:model_dynamics} rather than the true dynamics
+\eqref{eq:true_dynamics}. The next section addresses this gap by calibrating
+the safety-relevant mismatch between the two models.
+
+
+
+
+%%%%%%%%%%%%%%%%%
+\section{Safety Certification under Model Mismatch}
+
+This section explains how model mismatch affects the model-based CBVF filter.
+The baseline is the CBVF certificate constructed from the approximate model,
+while safety is required for the true closed-loop system. Rather than learning a
+new safety certificate entirely from interaction data, we keep the model-based
+CBVF structure and calibrate the part of the mismatch that can make the online
+safety condition too optimistic.
+
+The main idea is to use a data-driven safety buffer inside the CBVF filter. This
+buffer tightens the online constraint by an amount calibrated from rollout data.
+The resulting calibrated filter will later yield a probabilistic safety
+guarantee for the true trajectory over the finite horizon.
+
+\subsection{Safety-relevant model mismatch}
+
+The disturbance set $\Dv$ in \eqref{eq:spaces} captures exogenous variability
+that is explicitly represented in the true dynamics \eqref{eq:true_dynamics}
+and the approximate dynamics \eqref{eq:model_dynamics}. This should be
+distinguished from modeling error between $f$ and $\fapp$. One could enlarge
+$\Dv$ to absorb such error, but doing so can make the offline reachability
+computation overly conservative and can substantially shrink the certified set
+$\mathcal{C}_{\gamma}^{\tilde f}(t)$ in \eqref{eq:model_safe_set}. On the other
+hand, if the modeling error is not accounted for, the certified set induced by
+the approximate model need not be forward invariant for the true system.
+
+The relevant error for the online filter is not the full discrepancy between
+$f$ and $\fapp$, but the component that enters the CBVF constraint in
+\eqref{eq:model_cbvf_qp}. In particular, the safety condition becomes
+optimistic when the directional derivative of the certificate along the true
+dynamics is smaller than the derivative predicted by the approximate model.
+Errors in the opposite direction do not require additional conservatism because
+they make the certificate decrease less than predicted.
+
+This motivates a one-sided correction that targets only the safety-degrading
+directional mismatch. A fixed worst-case buffer can be overly conservative,
+whereas no correction can leave the model-based filter unsafe under mismatch.
+Before introducing the conformal buffer, we first describe a conservative
+set-tightening relation that illustrates what a value-function-level correction
+would require.
+
+\subsection{A conservative set-tightening relation}
+
+A conservative way to account for model mismatch is to tighten the model-based
+certificate. A simple comparison argument shows what such a tightening would
+require at the value-function level. Let $\Bt$ denote the CBVF defined as in
+\eqref{eq:model_cbvf}, but with the true dynamics \eqref{eq:true_dynamics} in
+place of the approximate dynamics \eqref{eq:model_dynamics}. Fix a compact
+operating region $\Omega\subset\R^n$ and a time $t\in[t_0,0]$.
+
+\begin{proposition}[Conservative superlevel-set inclusion]
+\label{prop:set_inclusion}
+Suppose there exists $\varepsilon_B(t)\in\R_{\ge 0}$ such that
+\begin{equation}
+    \sup_{\xv\in\Omega}
+    \bigl|\Bt(\xv,t)-\Bm(\xv,t)\bigr|
+    \le \varepsilon_B(t).
+    \label{eq:certificate_error}
+\end{equation}
+Then
+\begin{equation}
+    \{\xv\in\Omega : \Bm(\xv,t)\ge \varepsilon_B(t)\}
+    \subseteq
+    \{\xv\in\Omega : \Bt(\xv,t)\ge 0\}.
+    \label{eq:set_inclusion}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Fix any $\xv\in\Omega$ such that $\Bm(\xv,t)\ge\varepsilon_B(t)$. From
+\eqref{eq:certificate_error},
+\[
+    \Bt(\xv,t)
+    \ge
+    \Bm(\xv,t)-\varepsilon_B(t)
+    \ge 0.
+\]
+Thus $\xv\in\{\xv\in\Omega:\Bt(\xv,t)\ge0\}$, which proves
+\eqref{eq:set_inclusion}.
+\end{proof}
+
+Proposition~\ref{prop:set_inclusion} shows that, if a uniform bound on the
+certificate error were available, then a tightened superlevel set of the
+model-based CBVF would be contained in the corresponding true-dynamics
+certified set. In practice, however, a deterministic bound such as
+\eqref{eq:certificate_error} is difficult to estimate tightly. It must control
+the full value-function error over the operating region $\Omega$, including
+states and mismatch realizations that may be rare along closed-loop rollouts.
+
+The online filter does not require such a global value-error bound. The
+constraint in \eqref{eq:model_cbvf_qp} depends on the directional derivative of
+the certificate along the dynamics. Therefore, instead of bounding the full
+difference between $\Bt$ and $\Bm$, the proposed method calibrates the
+one-sided directional mismatch that can weaken this constraint. The next
+section makes this step precise by defining rollout-level mismatch scores and
+using conformal prediction to convert them into a data-dependent safety buffer
+for the CBVF filter.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\section{Conformal Calibration of the CBVF Filter}
+\label{sec:conformal_calibration}
+
+In this section, we calibrate the CBVF filter using rollout data. The goal is
+to correct the part of the model mismatch that can make the safety constraint
+too optimistic. We keep the model-based CBVF filter, but add a data-driven
+buffer to its online constraint.
+
+This buffer is computed using conformal prediction. Conformal prediction uses
+calibration data to produce a threshold with finite-sample probabilistic
+coverage \cite{angelopoulos2023conformal,shafer2008tutorial}. In our setting,
+this threshold becomes the safety buffer for the CBVF filter. The calibrated
+filter therefore keeps the same basic QP structure as the model-based filter,
+but accounts for safety-relevant mismatch between the approximate model and the
+true system.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{One-sided mismatch score}
+
+For online safety, the relevant quantity is not the full model mismatch, but
+only the part that can make the certificate evolve less favorably than predicted
+by the approximate model. We therefore use a one-sided positive score that
+retains safety-deteriorating errors and ignores discrepancies for which the
+true dynamics do not decrease the certificate more than the approximate model
+predicts.
+%%%%%%%%%%%%%5
+Let $N\in\N$ denote the number of calibration rollouts, indexed by
+$i\in\{1,\dots,N\}$. Let $\xv_i(s)$, $\uv_i(s)$, and $\dv_i(s)$ denote the
+state, applied input, and realized disturbance along the $i$th rollout. For
+each time $s\in[t_0,0]$, define
+\begin{equation}
+\begin{aligned}
+    \eta_i(s)
+    :=
+    \Bigl[
+    &\min_{\dv\in\Dv}
+    \ip{\nabla_{\xv}\Bm(\xv_i(s),s)}
+    {\fapp(\xv_i(s),\uv_i(s),\dv)} \\
+    &-
+    \ip{\nabla_{\xv}\Bm(\xv_i(s),s)}
+    {f(\xv_i(s),\uv_i(s),\dv_i(s))}
+    \Bigr]_+ .
+\end{aligned}
+\label{eq:eta_def}
+\end{equation}
+
+The positive-part operator in \eqref{eq:eta_def} keeps only the cases where the
+approximate model predicts a more favorable certificate derivative than the
+true dynamics provide. If the directional derivative along the true dynamics is
+no smaller than the model prediction, then $\eta_i(s)=0$, and no additional
+conservatism is introduced at time $s$.
+%%%%%%%%%%%%%%
+\begin{assumption}[Calibration measurements]
+\label{ass:calibration_access}
+For each calibration rollout $i\in\{1,\dots,N\}$, the state trajectory
+$\xv_i(s)$ and the applied control $\uv_i(s)$ are available on $[t_0,0]$.
+In addition, the scalar directional derivative
+\[
+    \ip{\nabla_{\xv}\Bm(\xv_i(s),s)}
+    {f(\xv_i(s),\uv_i(s),\dv_i(s))}
+\]
+that appears in the score \eqref{eq:eta_def} can be computed or estimated.
+
+In simulation or model-known settings, this quantity can be computed by
+evaluating the true dynamics along the rollout, as in standard
+reachability-based and CBVF computations
+\cite{mitchell2005time,choi2021cbvf}. In experimental settings, it can be
+estimated from logged state measurements, for example through numerical
+differentiation or state estimation, or by using observer-based methods to
+estimate disturbance and uncertainty effects
+\cite{vanbreugel2020numerical,alan2023dobcbf,chen2023robusteso}. Equivalently,
+using \eqref{eq:true_dynamics}, it is enough to estimate
+\[
+    \ip{\nabla_{\xv}\Bm(\xv_i(s),s)}{\dot{\xv}_i(s)}
+\]
+from the rollout data.
+\end{assumption}
+
+Assumption~\ref{ass:calibration_access} ensures that the pointwise score in
+\eqref{eq:eta_def} can be computed from each calibration rollout. The key
+requirement is not a complete model of the true dynamics, but the directional
+effect of the observed trajectory on the CBVF. Once this pointwise mismatch
+score is available, the next step is to convert each rollout into one scalar
+calibration score.
+
+Since each calibration example is a full trajectory, we aggregate the
+pointwise score over the horizon:
+\begin{equation}
+    s_i:=\sup_{s\in[t_0,0]}\eta_i(s).
+    \label{eq:trajectory_score}
+\end{equation}
+The score $s_i$ records the largest safety-degrading mismatch observed along
+the $i$th rollout. Taking the supremum is conservative for an individual
+trajectory, since one large value determines the rollout score. However, it
+matches the finite-horizon safety objective because it controls the mismatch
+over the entire interval $[t_0,0]$. It is also more targeted than the global
+certificate-error bound in \eqref{eq:certificate_error}, since it calibrates
+directional mismatch along sampled trajectories rather than a uniform
+value-function error over the whole region $\Omega$.
+
+The rollout-level scores in \eqref{eq:trajectory_score} are then used to
+compute the split-conformal safety buffer.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Split-conformal buffer}
+
+The rollout-level scores in \eqref{eq:trajectory_score} are now used to compute
+a safety buffer. The goal is to choose a threshold that is large enough to cover
+the safety-degrading mismatch observed in calibration, while still being
+computed directly from data.
+
+\begin{assumption}[Exchangeability]
+\label{ass:exchangeability}
+The calibration scores $\{s_i\}_{i=1}^N$ from \eqref{eq:trajectory_score} and
+the deployment score
+\begin{equation}
+    s_{\mathrm{new}}
+    :=
+    \sup_{s\in[t_0,0]}\eta_{\mathrm{new}}(s)
+    \label{eq:new_score}
+\end{equation}
+are exchangeable. The approximate model $\fapp$, the certificate $\Bm$, the
+score construction in \eqref{eq:eta_def}--\eqref{eq:trajectory_score}, and the
+nominal policy are fixed across calibration and deployment.
+\end{assumption}
+
+Assumption~\ref{ass:exchangeability} means that the calibration and deployment
+scores are generated under the same closed-loop setup. In practice, this
+requires collecting calibration rollouts using the same nominal policy,
+approximate model, CBVF table, score definition, initial-state distribution,
+and disturbance or mismatch regime used at deployment. If any of these
+components changes substantially, the calibration scores no longer represent
+the deployment setting and the buffer should be recalibrated.
+
+Under Assumption~\ref{ass:exchangeability}, split conformal prediction gives a
+finite-sample upper bound on the deployment score
+\cite{angelopoulos2023conformal,shafer2008tutorial}. Let $\delta\in(0,1)$ be
+the target miscoverage level, and let
+\[
+    s_{(1)}\le \cdots \le s_{(N)}
+\]
+denote the ordered calibration scores. For $\delta\ge 1/(N+1)$, define
+\begin{equation}
+    \widehat\xi_{\delta}
+    :=
+    s_{(k)},
+    \qquad
+    k:=\left\lceil (N+1)(1-\delta)\right\rceil .
+    \label{eq:conformal_quantile}
+\end{equation}
+The condition $\delta\ge 1/(N+1)$ ensures that $k\le N$. For smaller
+miscoverage levels, one may set $\widehat\xi_{\delta}=\infty$, which preserves
+validity but gives a vacuous buffer.
+
+The quantity $\widehat\xi_{\delta}\in\R_{\ge 0}$ is the split-conformal safety
+buffer. Smaller values of $\delta$ require higher coverage and therefore
+typically produce a larger buffer. The finite-sample guarantee holds for any
+calibration size $N$ for which the quantile in
+\eqref{eq:conformal_quantile} is defined. However, smaller calibration sets
+give a coarser empirical quantile and can make $\widehat\xi_{\delta}$ more
+variable or more conservative. Increasing $N$ usually gives a more stable
+estimate of the safety buffer, but requires more calibration rollouts.
+
+\begin{proposition}[Finite-sample conformal coverage]
+\label{prop:cp_coverage}
+Under Assumption~\ref{ass:exchangeability},
+\begin{equation}
+    \PP\!\left(s_{\mathrm{new}}\le \widehat\xi_{\delta}\right)
+    \ge 1-\delta .
+    \label{eq:cp_coverage}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The result follows from the standard split-conformal coverage guarantee applied
+to the exchangeable calibration scores in \eqref{eq:trajectory_score} and the
+deployment score in \eqref{eq:new_score}
+\cite{angelopoulos2023conformal,shafer2008tutorial}.
+\end{proof}
+
+Proposition~\ref{prop:cp_coverage} states that the calibrated buffer upper
+bounds the deployment rollout score with probability at least $1-\delta$. This
+coverage event is the key probabilistic ingredient in the safety proof. The
+next section uses the calibrated buffer $\widehat\xi_{\delta}$ to define the
+online CBVF filter and then shows how the coverage event leads to
+finite-horizon safety for the true closed-loop system.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\section{Calibrated CBVF Filter and Safety Guarantee}
+\label{sec:calibrated_filter_safety}
+
+This section defines the calibrated online filter and proves its safety
+guarantee. The filter keeps the same goal as the model-based CBVF filter: stay
+as close as possible to the nominal policy while enforcing a safety condition.
+The difference is that the safety condition is tightened using the conformal
+buffer computed from rollout data.
+
+This tightening compensates for the part of the model mismatch that can make
+the approximate model too optimistic. We then show that, when the conformal
+coverage event holds, the calibrated filter keeps the true trajectory inside
+the safe set over the finite horizon. The full workflow, from nominal policy
+construction to online calibrated filtering, is summarized at the end of the
+section in Algorithm~\ref{alg:conformal_cbvf_workflow}.
+
+\subsection{Calibrated CBVF-QP}
+
+The conformal CBVF filter is defined by replacing the model-based inequality in
+\eqref{eq:model_cbvf_qp} with a calibrated inequality:
+\begin{equation}
+\begin{aligned}
+    \pi_{\mathrm{safe}}^{\mathrm{CP}}(\xv,t)
+    =\;& \arg\min_{\uv\in\Uv}
+    \norm{\uv-\pi_{\mathrm{nom}}(\xv,t)}^2 \\
+    \text{s.t.}\;&
+    \partial_t \Bm(\xv,t)
+    + \gamma \Bm(\xv,t) \\
+    &\quad+
+    \min_{\dv\in\Dv}
+    \ip{\nabla_{\xv}\Bm(\xv,t)}
+    {\fapp(\xv,\uv,\dv)}
+    \ge \widehat\xi_{\delta}.
+\end{aligned}
+\label{eq:cp_filter}
+\end{equation}
+Compared with \eqref{eq:model_cbvf_qp}, the objective is unchanged. The only
+difference is the right-hand side of the CBVF constraint. The buffer
+$\widehat\xi_\delta$ forces the approximate-model derivative to remain above a
+calibrated threshold, so that the filter accounts for the safety-degrading
+directional mismatch measured by the scores in \eqref{eq:eta_def}.
+
+The safety proof uses two local conditions. First, the CBVF must be
+differentiable along the part of the state-time space visited by the closed-loop
+trajectory. Second, the calibrated constraint must admit an admissible input
+whenever the trajectory is inside the certified set.
+
+\begin{assumption}[Local regularity]
+\label{ass:local_regularity}
+The function $\Bm$ is continuously differentiable on the operating region
+visited by the closed-loop system.
+\end{assumption}
+
+\begin{assumption}[Pointwise feasibility]
+\label{ass:qp_feasibility}
+For every $(\xv,t)$ visited by the closed-loop system with
+$\Bm(\xv,t)\ge 0$, there exists a control input $\uv\in\Uv$ satisfying the
+constraint in \eqref{eq:cp_filter}.
+\end{assumption}
+
+The feasibility condition becomes more restrictive when the buffer
+$\widehat\xi_\delta$ increases. In particular, smaller values of $\delta$
+typically give a larger conformal quantile in \eqref{eq:conformal_quantile},
+which tightens the constraint in \eqref{eq:cp_filter}.
+
+\begin{remark}
+The CBVF in \eqref{eq:model_cbvf_vi} is a viscosity solution and need not be
+smooth everywhere. Assumption~\ref{ass:local_regularity} is therefore imposed
+only on the region visited by the online filter. Nonsmooth extensions could use
+generalized gradients, but this paper focuses on the differentiable case.
+\end{remark}
+
+\subsection{Finite-horizon safety guarantee}
+
+We now state the main safety result. The result combines the calibrated filter
+in \eqref{eq:cp_filter} with the conformal coverage guarantee in
+\eqref{eq:cp_coverage}.
+
+\begin{theorem}[Finite-horizon high-probability safety]
+\label{thm:main_safety}
+Let $\Bm$ be the model-based CBVF in \eqref{eq:model_cbvf}, and let
+$\xv(\cdot)$ be a closed-loop trajectory of the true system
+\eqref{eq:true_dynamics} on $[t_0,0]$ under the calibrated filter
+\eqref{eq:cp_filter}. Suppose Assumptions~\ref{ass:regularity},
+\ref{ass:exchangeability}, \ref{ass:local_regularity}, and
+\ref{ass:qp_feasibility} hold. Assume also that
+\begin{equation}
+    \Bm(\xv(t_0),t_0)\ge 0.
+    \label{eq:initial_condition}
+\end{equation}
+Let $\mathcal E_{\delta}$ denote the conformal coverage event
+\begin{equation}
+    \mathcal E_{\delta}
+    :=
+    \left\{
+    \sup_{s\in[t_0,0]}\eta(s)\le \widehat\xi_{\delta}
+    \right\},
+    \label{eq:coverage_event}
+\end{equation}
+where $\eta(s)$ is the one-sided mismatch score in \eqref{eq:eta_def}
+evaluated along the deployment trajectory. Then, on
+$\mathcal E_{\delta}$,
+\begin{equation}
+    \Bm(\xv(s),s)\ge 0,
+    \qquad \forall s\in[t_0,0].
+    \label{eq:cbvf_nonnegative}
+\end{equation}
+Therefore,
+\begin{equation}
+    \xv(s)\in\safe,
+    \qquad \forall s\in[t_0,0].
+    \label{eq:true_safety}
+\end{equation}
+Moreover,
+\begin{equation}
+    \PP\!\left(
+    \xv(s)\in\safe \text{ for all } s\in[t_0,0]
+    \right)
+    \ge 1-\delta .
+    \label{eq:prob_safe}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+By the definition of the one-sided mismatch score in \eqref{eq:eta_def}, for
+almost every $s\in[t_0,0]$ along the deployment trajectory,
+\begin{equation}
+\begin{aligned}
+    &\ip{\nabla_{\xv}\Bm(\xv(s),s)}
+    {f(\xv(s),\uv(s),\dv(s))}  \\
+    &\ge
+    \min_{\dv\in\Dv}
+    \ip{\nabla_{\xv}\Bm(\xv(s),s)}
+    {\fapp(\xv(s),\uv(s),\dv)}
+    -\eta(s).
+\end{aligned}
+\label{eq:eta_ineq}
+\end{equation}
+Since the control input is generated by the calibrated filter
+\eqref{eq:cp_filter},
+\begin{equation}
+\begin{aligned}
+    &\partial_t \Bm(\xv(s),s)
+    + \gamma \Bm(\xv(s),s) \\
+    &\quad+
+    \min_{\dv\in\Dv}
+    \ip{\nabla_{\xv}\Bm(\xv(s),s)}
+    {\fapp(\xv(s),\uv(s),\dv)}
+    \ge \widehat\xi_{\delta}.
+\end{aligned}
+\label{eq:filter_ineq}
+\end{equation}
+Combining \eqref{eq:eta_ineq} and \eqref{eq:filter_ineq}, and using
+Assumption~\ref{ass:local_regularity}, gives
+\begin{equation}
+    \frac{d}{ds}\Bm(\xv(s),s)
+    +\gamma \Bm(\xv(s),s)
+    \ge \widehat\xi_{\delta}-\eta(s)
+    \quad \text{a.e. on } [t_0,0].
+    \label{eq:diff_ineq_pre}
+\end{equation}
+On the event $\mathcal E_{\delta}$ in \eqref{eq:coverage_event},
+$\eta(s)\le \widehat\xi_{\delta}$ for all $s\in[t_0,0]$. Hence
+\begin{equation}
+    \frac{d}{ds}\Bm(\xv(s),s)
+    +\gamma \Bm(\xv(s),s)
+    \ge 0
+    \quad \text{a.e. on } [t_0,0].
+    \label{eq:diff_ineq}
+\end{equation}
+Since $\Bm$ is continuously differentiable on the visited region and the true
+trajectory is absolutely continuous by Assumption~\ref{ass:regularity}, the map
+$s\mapsto \Bm(\xv(s),s)$ is absolutely continuous. Multiplying
+\eqref{eq:diff_ineq} by the integrating factor $e^{\gamma s}$ and integrating
+from $t_0$ to $s$ yields
+\begin{equation}
+    \Bm(\xv(s),s)
+    \ge
+    e^{-\gamma(s-t_0)}\Bm(\xv(t_0),t_0),
+    \qquad \forall s\in[t_0,0].
+    \label{eq:cbvf_lb}
+\end{equation}
+The right-hand side is nonnegative by \eqref{eq:initial_condition}, which proves
+\eqref{eq:cbvf_nonnegative}. Since $\Bm(\xv,s)\le l(\xv)$ by
+\eqref{eq:Bm_le_l}, we have $l(\xv(s))\ge 0$ for all $s\in[t_0,0]$. Thus
+$\xv(s)\in\safe$ for all $s\in[t_0,0]$, proving \eqref{eq:true_safety}.
+
+Finally, Proposition~\ref{prop:cp_coverage} and
+Assumption~\ref{ass:exchangeability} imply that $\mathcal E_{\delta}$ holds
+with probability at least $1-\delta$. Since safety holds on
+$\mathcal E_{\delta}$, \eqref{eq:prob_safe} follows.
+\end{proof}
+
+\begin{remark}
+Theorem~\ref{thm:main_safety} gives a finite-horizon, trajectory-level, marginal
+probabilistic safety guarantee. The probability in \eqref{eq:prob_safe} is over
+the calibration rollouts and the deployment rollout. It is not a worst-case
+guarantee over all possible deployment conditions.
+\end{remark}
+
+\begin{remark}[Sampled-data implementation]
+\label{rem:sampled_data}
+The proof is stated in continuous time, while the implemented filter is applied
+at the decision times in \eqref{eq:decision_times} with zero-order hold. This
+sampled-data gap can be reduced by using a faster update rate or by adding an
+inter-sample safety margin
+\cite{fisac2019general,alshiekh2018safe,lu2025adaptiveshielding}.
+\end{remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{algorithm}[t]
+\caption{Conformal CBVF shielding workflow}
+\label{alg:conformal_cbvf_workflow}
+\scriptsize
+\begin{algorithmic}[1]
+\State Train the nominal policy $\pi_{\mathrm{nom}}$ in
+\eqref{eq:nominal_policy}.
+\State Compute the model-based CBVF $\Bm$ from \eqref{eq:model_cbvf}.
+\State Fix the approximate model $\fapp$, the CBVF $\Bm$, and
+$\pi_{\mathrm{nom}}$.
+\State Collect calibration rollouts $\{\xv_i(\cdot),\uv_i(\cdot)\}_{i=1}^N$.
+\State Compute the pointwise scores $\eta_i(s)$ using \eqref{eq:eta_def}.
+\State Form rollout scores $s_i=\sup_{s\in[t_0,0]}\eta_i(s)$ as in
+\eqref{eq:trajectory_score}.
+\State Compute the conformal buffer $\widehat\xi_\delta$ using
+\eqref{eq:conformal_quantile}.
+\State At each decision time $t_j$, solve the calibrated QP
+\eqref{eq:cp_filter}.
+\State Apply the filtered input on $[t_j,t_{j+1})$ with zero-order hold.
+\State Safety follows from Theorem~\ref{thm:main_safety}.
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation and Experimental Validation}
+\label{sec:experiments}
+
+This section evaluates the calibrated CBVF filter on a planar reach-avoid task
+with controlled model mismatch. The goal is to test whether the conformal
+buffer improves safety when the online filter is built from an approximate
+dynamics model.
+
+The system is a Dubins car with state $\xv=(p_x,p_y,\theta)$ and steering
+input $\uv\in[-1,1]$. The true dynamics are
+\begin{equation}
+    \dot p_x = v\cos\theta,\qquad
+    \dot p_y = v\sin\theta,\qquad
+    \dot\theta = \beta u,
+    \label{eq:dubins_dynamics_exp}
+\end{equation}
+with forward speed $v=0.60$. The robot starts near
+$(-2,-2,\pi/4)$, with uniform position jitter of $\pm 0.30$ and heading jitter
+of $\pm 0.15$ rad. The goal region is centered at $(2,2)$ with radius $0.30$.
+The unsafe set is a circular obstacle centered at the origin, with combined
+robot-obstacle radius $r=0.70$. Safety is encoded by the signed distance to the
+obstacle boundary,
+\begin{equation}
+    l(\xv)=\|p-p_{\mathrm{obs}}\|_2-r .
+    \label{eq:signed_distance_exp}
+\end{equation}
+
+The nominal controller is a SAC-Lagrangian policy trained in the aligned
+no-mismatch environment. The offline CBVF is recomputed for the reported
+experiment on an $81\times 81\times 61$ spatial grid, with lookback horizon
+$T=20\,\mathrm{s}$, time step $\Delta t=0.10\,\mathrm{s}$, and discount
+$\gamma=0.1$. The conformal miscoverage level is $\delta=0.05$, giving a
+$95\%$ split-conformal coverage level, and the calibration set contains
+$N=500$ rollouts. Results are reported as mean $\pm$ standard deviation over
+five random seeds, with $100$ evaluation episodes per seed.
+
+The experiments use a matched-training protocol: a nominal policy trained under
+a given dynamics setting is evaluated only under the same deployment setting.
+This section reports the aligned no-mismatch case, where the model used by the
+filter matches the true dynamics,
+$\beta_{\mathrm{model}}=\beta_{\mathrm{truth}}=0.50$. The same protocol can be
+applied separately to hard and easy mismatch policies once those policies are
+trained.
+
+We compare three methods. The first is the unshielded nominal RL policy. The
+second is a least-restrictive CBVF baseline, denoted CBVF (LR), which activates
+only when $\Bm(\xv,t)\le 0$ and uses a zero right-hand side in the QP
+constraint. The third is the calibrated CP-CBVF filter in \eqref{eq:cp_filter},
+which activates when $\Bm(\xv,t)\le 0.10$ and uses the conformal buffer
+$\widehat\xi_\delta$.
+
+\begin{table}[t]
+\centering
+\caption{Reach-avoid performance in the aligned no-mismatch setting. Values are mean $\pm$ standard deviation over five seeds. CBVF activates at $\Bm\le 0$; CP-CBVF activates at $\Bm\le 0.10$.}
+\label{tab:experiment_results}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{llccccc}
+\hline
+Scenario & Method & Unsafe & Goal & Return & Interv. & $\widehat\xi_\delta$ \\
+\hline
+Aligned & Nominal
+& $0.252 \pm 0.051$
+& $0.748 \pm 0.051$
+& $-520 \pm 10$
+& $0$
+& -- \\
+Aligned & CBVF (LR)
+& $0.252 \pm 0.051$
+& $0.748 \pm 0.051$
+& $-520 \pm 10$
+& $0.3 \pm 0.1$
+& $0.000$ \\
+Aligned & \textbf{CP-CBVF}
+& $\mathbf{0.000 \pm 0.000}$
+& $\mathbf{1.000 \pm 0.000}$
+& $-570 \pm 2$
+& $8.4 \pm 0.7$
+& $0.000$ \\
+\hline
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:experiment_results} summarizes the aligned no-mismatch results.
+The nominal policy reaches the goal in most episodes, but it still produces
+unsafe rollouts. The least-restrictive CBVF baseline behaves almost identically
+to the nominal policy because it activates only at the certificate boundary and
+makes very few corrections. In contrast, CP-CBVF achieves zero unsafe episodes
+and a $100\%$ goal-reaching rate in the aligned setting.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{safety_comparison.png}
+    \caption{Safety and task-completion comparison in the aligned no-mismatch setting. Left: unsafe episode rate. Right: goal-reaching rate. The nominal policy and least-restrictive CBVF baseline are nearly identical, while CP-CBVF removes all violations and reaches the goal in all evaluation episodes. Error bars show $\pm$ one standard deviation over five seeds.}
+    \label{fig:safety_comparison}
+\end{figure}
+
+Figure~\ref{fig:safety_comparison} visualizes the same safety and goal-reaching
+metrics. The nominal and CBVF (LR) bars overlap because the least-restrictive
+filter rarely changes the nominal action. CP-CBVF removes the observed
+violations while preserving goal completion, showing that earlier activation is
+effective even when the approximate and true dynamics are aligned.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.85\columnwidth]{trajectories_AlignedModel.png}
+    \caption{Representative aligned-setting rollout trajectories from seed $7$.
+    The black circle is the obstacle, the green circle is the goal region, and
+    the star marks the nominal start. The legend distinguishes the nominal,
+    CBVF (LR), and CP-CBVF trajectories. The nominal and CBVF trajectories may
+    overlap on safe episodes because the least-restrictive CBVF baseline rarely
+    changes the nominal action.}
+    \label{fig:representative_trajectories}
+\end{figure}
+
+The representative trajectories in Fig.~\ref{fig:representative_trajectories}
+show how the methods behave in the state space. The nominal policy can take a
+short path toward the goal that intersects the obstacle. The CBVF (LR) baseline
+follows nearly the same route because it intervenes only near the certificate
+boundary. CP-CBVF instead steers around the obstacle and reaches the goal in the
+shown aligned-setting rollouts.
+
+In the aligned setting, the calibration scores are zero, so
+$\widehat\xi_\delta=0$. Therefore, the improvement does not come from a nonzero
+model-mismatch buffer. It comes from activating the CP-CBVF filter earlier,
+before the certificate reaches zero. This behavior is consistent with the
+matched no-mismatch setting, where the approximate model is not optimistic
+relative to the true dynamics.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\columnwidth]{interventions.png}
+    \caption{Mean shield interventions per rollout in the aligned no-mismatch setting. CBVF (LR) makes near-zero interventions because it only activates at the certificate boundary. CP-CBVF intervenes earlier to maintain the activation margin and enforce the calibrated safety constraint.}
+    \label{fig:interventions}
+\end{figure}
+
+Figure~\ref{fig:interventions} reports the number of filter interventions per
+rollout. CP-CBVF intervenes more often than CBVF (LR), which is expected
+because CP-CBVF activates before the certificate reaches zero. The added
+interventions produce a performance tradeoff: the mean CP-CBVF return is lower
+than the nominal return, reflecting the longer but safe route around the
+obstacle.
+
+The empirical results are consistent with the conformal safety guarantee.
+Proposition~\ref{prop:cp_coverage} gives
+\[
+    \mathbb{P}\!\left(s_{\mathrm{new}}\le \widehat\xi_\delta\right)
+    \ge 1-\delta = 0.95,
+\]
+and Theorem~\ref{thm:main_safety} converts this coverage event into a
+finite-horizon safety statement for the calibrated filter. Across $500$
+deployment rollouts in the aligned setting, CP-CBVF has empirical unsafe rate
+$0.000$. Overall, the aligned experiment shows that CP-CBVF improves safety
+while preserving task completion under the matched no-mismatch deployment
+protocol.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Conclusion}
+% To be added.
+
+\bibliographystyle{IEEEtran}
+\bibliography{conformal_cbvf_shielding}
+
+\end{document}

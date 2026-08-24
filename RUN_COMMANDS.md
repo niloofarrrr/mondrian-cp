@@ -1,0 +1,4304 @@
+# Finalized simulation run commands
+
+```bash
+cd ~/Desktop/"conformal shield"
+```
+
+## Recorded wrapper command
+
+```bash
+bash experiments/launch_full_suite.sh --retry-failed
+```
+
+The commands below are **reconstructed equivalent commands**: the saved ledger supplied all originally explicit flags, while saved policy/output configurations supplied explicit parser defaults and derived metric/action/QP log paths. Flags whose finalized value can only be selected by absence are necessarily omitted: `binary_unsafe_cost=false`, `allow_infeasible_cp_diagnostic_run=false`, `calib_continue_after_unsafe=true`, `speed_envelope=None` (automatically derived), `time_invariant_cbvf=false`, `require_active_mondrian=true`, and `allow_coarse_fallback=false`.
+
+## aligned_nominal_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## aligned_nominal_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## aligned_nominal_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## aligned_nominal_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## aligned_nominal_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_nominal_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## aligned_cbvf_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## aligned_cbvf_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## aligned_cbvf_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## aligned_cbvf_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## aligned_cbvf_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cbvf_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## aligned_cp_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## aligned_cp_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## aligned_cp_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## aligned_cp_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## aligned_cp_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.2 \
+  --beta-u 0.8 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## easy_nominal_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## easy_nominal_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## easy_nominal_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## easy_nominal_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## easy_nominal_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_nominal_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## easy_cbvf_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## easy_cbvf_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## easy_cbvf_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## easy_cbvf_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## easy_cbvf_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cbvf_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## easy_cp_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## easy_cp_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## easy_cp_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## easy_cp_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## easy_cp_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min -0.1 \
+  --beta-u 0.7 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## hard_nominal_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## hard_nominal_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## hard_nominal_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## hard_nominal_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## hard_nominal_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method nominal \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_nominal_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## hard_cbvf_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## hard_cbvf_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## hard_cbvf_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## hard_cbvf_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## hard_cbvf_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cbvf \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cbvf_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## hard_cp_seed_7 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 7
+```
+
+## hard_cp_seed_42 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 42
+```
+
+## hard_cp_seed_123 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 123
+```
+
+## hard_cp_seed_0 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 0
+```
+
+## hard_cp_seed_99 — reconstructed equivalent
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 train/train_sac_lag.py \
+  --algorithm sac_lag \
+  --max-steps 250000 \
+  --start-training 25000 \
+  --warmup-policy reference \
+  --reference-proposal-steps 75000 \
+  --residual-reference-scale 0.02 \
+  --batch-size 256 \
+  --utd-ratio 1 \
+  --eval-interval 25000 \
+  --log-interval 1000 \
+  --save-interval 25000 \
+  --eval-episodes 20 \
+  --periodic-eval-episodes 5 \
+  --checkpoint-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99' \
+  --hidden-dims 256,256 \
+  --actor-lr 0.0003 \
+  --critic-lr 0.0003 \
+  --temp-lr 0.0003 \
+  --lag-lr 0.0003 \
+  --discount 0.99 \
+  --tau 0.005 \
+  --init-temperature 0.1 \
+  --init-lag 0.0 \
+  --cost-limit 1.0 \
+  --speed 0.6 \
+  --speed-min 0.0 \
+  --beta-u 0.6 \
+  --dt 0.05 \
+  --horizon 400 \
+  --initial-x -2.0 \
+  --initial-y -2.0 \
+  --initial-theta 0.7853981633974483 \
+  --start-jitter-xy 0.6 \
+  --start-jitter-theta 0.35 \
+  --dense-safety-cost \
+  --dense-safety-weight 0.25 \
+  --safety-cost-margin 0.1 \
+  --cost-on-nominal-action \
+  --goal-bonus 750.0 \
+  --action-penalty 0.0 \
+  --unsafe-penalty 25.0 \
+  --out-of-bounds-penalty 250.0 \
+  --collision-terminal-penalty 2500.0 \
+  --terminate-on-collision \
+  --training-shield-method cp \
+  --gamma 0.1 \
+  --delta 0.05 \
+  --n-calib 500 \
+  --mondrian-clearance-edges 0.25,0.75,1.50 \
+  --epsilon-grid 0.0 \
+  --epsilon-inter 0.0 \
+  --qp-diagnostic-episodes 2 \
+  --qp-diagnostic-print-limit 200 \
+  --calibration-stochastic-policy \
+  --cbvf-model-speed 0.6 \
+  --cbvf-model-speed-min -0.2 \
+  --cbvf-model-beta-u 0.8 \
+  --cbvf-activate-margin 0.0 \
+  --cp-activate-margin 0.1 \
+  --cache-dir '/home/mars/Desktop/conformal shield/cbvf_cache' \
+  --recompute-cbvf \
+  --cbvf-nx 81 \
+  --cbvf-ny 81 \
+  --cbvf-nth 61 \
+  --cbvf-dt 0.1 \
+  --cbvf-terminal-guard 5.0 \
+  --solver-accuracy low \
+  --target-shape signed_distance \
+  --target-clip 1.0 \
+  --max-abs-table 10.0 \
+  --max-abs-grad 200.0 \
+  --max-abs-solver-value 50.0 \
+  --max-reasonable-xi 5.0 \
+  --max-est-runtime-gb 3.0 \
+  --odp-root '/home/mars/Desktop/conformal shield' \
+  --solver-file '/home/mars/Desktop/conformal shield/solver_cbvf.py' \
+  --eval-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99/training_eval_metrics.jsonl' \
+  --action-log-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99/training_actions.jsonl' \
+  --qp-diagnostics-jsonl '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99/qp_feasibility_diagnostics.jsonl' \
+  --results-json '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99/training_and_evaluation_results.json' \
+  --plot-dir '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99/plots' \
+  --action-plot-stride 100 \
+  --keep-if-nominal-unsafe-below 0.20 \
+  --keep-if-goal-above 0.75 \
+  --no-tqdm \
+  --seed 99
+```
+
+## Final evaluation
+
+Primary final evaluation is executed inside every training command above through `--eval-episodes 20`; there is no separate saved primary final-evaluation command.
+
+## Fresh conformal-coverage evaluation — reconstructed
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_7/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_42/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_123/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_0/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/aligned_cp_seed_99/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_7/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_42/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_123/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_0/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/easy_cp_seed_99/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_7/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_42/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_123/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_0/heldout_reference_coverage_fresh.json'
+```
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/evaluate_reference_coverage.py \
+  '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99' \
+  --episodes 100 \
+  --fresh-calibration \
+  --output '/home/mars/Desktop/conformal shield/results/runs/hard_cp_seed_99/heldout_reference_coverage_fresh.json'
+```
+
+## Aggregation, final tables, and Figures 1–5
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/aggregate_full_suite.py
+```
+
+## Acceptance audit
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/audit_full_suite.py
+```
+
+## Scientific final report
+
+```bash
+/home/mars/miniconda3/envs/odp/bin/python3.8 experiments/build_scientific_report.py
+```
+
+## Recorded combined finalizer
+
+```bash
+bash experiments/finalize_when_complete.sh
+```
+

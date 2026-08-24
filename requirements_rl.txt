@@ -1,0 +1,12 @@
+# Core RL dependencies for jaxrl5 training/loading.
+# Use versions compatible with the base repository environment.
+numpy
+gymnasium
+tqdm
+jax
+jaxlib
+flax
+optax
+distrax
+ml-collections
+matplotlib
