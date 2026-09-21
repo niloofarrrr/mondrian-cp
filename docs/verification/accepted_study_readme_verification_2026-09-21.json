@@ -1,0 +1,89 @@
+{
+  "date": "2026-09-21",
+  "accepted_study": "/home/mars/Desktop/conformal shield/results_mechanism_v6/study_001",
+  "readme": "README_September_21_2026.md",
+  "paper_rebuild_directory": "/tmp/ecc-study001-readme-verification",
+  "simulation_replayed_for_documentation": false,
+  "frozen_input_hashes_unchanged": true,
+  "accepted_paper_artifact_hashes_unchanged": true,
+  "regenerated_numerical_tables_and_aggregates_identical": {
+    "tables/main_comparison.csv": true,
+    "tables/main_comparison.tex": true,
+    "tables/main_comparison.md": true,
+    "tables/feasibility.csv": true,
+    "tables/coverage_and_buffers.csv": true,
+    "tables/buffer_summary.csv": true,
+    "tables/runtime_feasibility.csv": true,
+    "tables/intersample_summary.csv": true,
+    "tables/representative_intervals.csv": true,
+    "aggregate/per_seed.csv": true,
+    "aggregate/hard_same_state_mechanism.csv": true,
+    "aggregate/episodes.csv": true,
+    "aggregate/summary.csv": true
+  },
+  "regenerated_scientific_acceptance_identical": true,
+  "regenerated_figures_exist": {
+    "uncalibrated_mismatch_mechanism.png": true,
+    "shared_actor_training.png": true,
+    "calibration_buffers_coverage.pdf": true,
+    "shared_actor_training.pdf": true,
+    "calibration_buffers_coverage.png": true,
+    "matched_trajectories.pdf": true,
+    "matched_trajectories.png": true,
+    "safety_goal_comparison.png": true,
+    "feasibility_intersample_verification.png": true,
+    "feasibility_intersample_verification.pdf": true,
+    "uncalibrated_mismatch_mechanism.pdf": true,
+    "safety_goal_comparison.pdf": true
+  },
+  "replay_command_verification": {
+    "full": {
+      "training_commands": 5,
+      "condition_block_commands": 15,
+      "interval_audit_commands": 15,
+      "metadata_matches": true,
+      "dry_run_wrote_nothing": true
+    },
+    "aligned": {
+      "training_commands": 0,
+      "condition_block_commands": 5,
+      "interval_audit_commands": 5,
+      "metadata_matches": true,
+      "dry_run_wrote_nothing": true
+    },
+    "easy": {
+      "training_commands": 0,
+      "condition_block_commands": 5,
+      "interval_audit_commands": 5,
+      "metadata_matches": true,
+      "dry_run_wrote_nothing": true
+    },
+    "hard": {
+      "training_commands": 0,
+      "condition_block_commands": 5,
+      "interval_audit_commands": 5,
+      "metadata_matches": true,
+      "dry_run_wrote_nothing": true
+    }
+  },
+  "output_protection": {
+    "/home/mars/Desktop/conformal shield/results_mechanism_v6/study_001": true,
+    "/home/mars/Desktop/conformal shield/results_mechanism_v6/study_001/some_new_run": true,
+    "/home/mars/Desktop/conformal shield": true,
+    "/tmp/ecc-study001-readme-verification": true
+  },
+  "all_requested_sections_present": true,
+  "shell_blocks_syntax_checked": 18,
+  "accepted_paths_verified": 63,
+  "main_readme_renamed": true,
+  "original_main_readme_preserved": true,
+  "passed": true,
+  "regenerated_png_figures_identical": {
+    "uncalibrated_mismatch_mechanism.png": true,
+    "shared_actor_training.png": true,
+    "calibration_buffers_coverage.png": true,
+    "matched_trajectories.png": true,
+    "safety_goal_comparison.png": true,
+    "feasibility_intersample_verification.png": true
+  }
+}
