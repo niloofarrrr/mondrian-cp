@@ -1,3 +1,5 @@
+> Historical training documentation. For final ECC paper results and reproduction commands, use [README_September_21_2026.md](README_September_21_2026.md).
+
 # RL policy training behind the finalized Mondrian shield
 
 The RL policy is no longer trained nominally and calibrated afterward. The only training path in train/train_sac_lag.py is:

@@ -34,6 +34,9 @@ DEFAULTS = {
     "temp_lr": 3e-4, "lag_lr": 3e-4, "discount": .99, "tau": .005,
     "init_temperature": .1, "init_lag": 0., "utd_ratio": 1,
     "initial_x": -2., "initial_y": -2., "initial_theta": math.pi / 4,
+    "reference_waypoint_x": -.65, "reference_waypoint_y": .65,
+    "reference_orbit_trigger_radius": 0.0, "reference_orbit_radius": 1.0,
+    "reference_orbit_gain": 2.0,
     "start_jitter_xy": .6, "start_jitter_theta": .35,
     "dense_safety_cost": True, "dense_safety_weight": .25,
     "safety_cost_margin": .1,
@@ -54,6 +57,8 @@ def load_args(run_dir: Path, truth_speed_min: float | None) -> SimpleNamespace:
     batch = json.loads((run_dir / "batch_configuration.json").read_text())
     values = dict(DEFAULTS)
     values.update(batch["configuration"])
+    if values.get("calibration_deterministic_policy", False):
+        values["calibration_stochastic_policy"] = False
     values["delta_traj"] = float(values.pop("delta", values.get("delta_traj", .05)))
     if truth_speed_min is not None:
         values["speed_min"] = float(truth_speed_min)
@@ -66,6 +71,7 @@ def make_env(args: SimpleNamespace):
         "ConformalDubins3d-v0", max_episode_steps=int(args.horizon),
         speed=args.speed, speed_min=args.speed_min, beta_u=args.beta_u,
         dt=args.dt, horizon=args.horizon,
+        goal=(getattr(args, "goal_x", 2.), getattr(args, "goal_y", 2.)),
         initial_state=(args.initial_x, args.initial_y, args.initial_theta),
         random_start=True, start_jitter_xy=args.start_jitter_xy,
         start_jitter_theta=args.start_jitter_theta,
@@ -142,6 +148,9 @@ def main() -> None:
             allow_coarse_fallback=False, max_est_runtime_gb=args.max_est_runtime_gb,
             use_time_invariant_cbvf=False,
         )
+    cbvf.enable_continuous_time_interpolation(bool(getattr(args, "intersample_protection", False)))
+    shield_cfg = cs.ShieldConfig(args.cbvf_activate_margin, args.cp_activate_margin,
+                                release_margin=float(getattr(args, "shield_release_margin", .05)))
     tau = np.linspace(-(args.horizon * args.dt + args.cbvf_terminal_guard),
                       -args.cbvf_terminal_guard, args.horizon + 1)
     partition = cs.MondrianPartition(
@@ -171,6 +180,10 @@ def main() -> None:
         agent, tuple(cfg.goal), bounds.lo, bounds.hi, variant.model.beta_u,
         residual_scale=args.residual_reference_scale,
         use_frozen_residual=True, stochastic=args.calibration_stochastic_policy,
+        waypoint=(args.reference_waypoint_x,args.reference_waypoint_y),
+        orbit_trigger_radius=args.reference_orbit_trigger_radius,
+        orbit_radius=args.reference_orbit_radius,
+        orbit_gain=args.reference_orbit_gain,
     )
     rng = np.random.default_rng(int(args.seed + 120_000 + args.max_steps))
     starts = [env.unwrapped.sample_initial_state(rng) for _ in range(ns.episodes)]
@@ -184,26 +197,33 @@ def main() -> None:
             world=world, control_bounds=bounds, variant=variant, cbvf=cbvf,
             policy=policy, tau=tau, init_states=calibration_starts,
             gamma=args.gamma, delta_traj=args.delta_traj,
-            shield_cfg=cs.ShieldConfig(args.cbvf_activate_margin,
-                                       args.cp_activate_margin),
+            shield_cfg=shield_cfg,
             continue_after_unsafe=args.calib_continue_after_unsafe,
             partition=partition, epsilon_grid=args.epsilon_grid,
         )
+        if not np.allclose(calibration.buffers,
+                           [r["xi_hat_off"] for r in region_rows], rtol=1e-10, atol=1e-12):
+            raise RuntimeError("Fresh calibration differs from the audited frozen-policy buffers; do not attach the old audit to these new buffers.")
     split = cs.assert_disjoint_initial_state_arrays(
         calibration_starts, starts
     )
-    logs = cs.evaluate_method(
+    heldout_scores, logs = cs.collect_calibration_scores(
         world=world, control_bounds=bounds, variant=variant, cbvf=cbvf,
         policy=policy, tau=tau, init_states=starts, method="cbvf", xi=0.,
         gamma=args.gamma,
-        shield_cfg=cs.ShieldConfig(args.cbvf_activate_margin,
-                                   args.cp_activate_margin),
-        mondrian_calibration=calibration,
-        speed_envelope=max(math.hypot(spec.v, abs(spec.beta_u))
-                           for spec in (variant.model, variant.truth)),
-        epsilon_inter=0.,
+        shield_cfg=shield_cfg,
+        continue_after_unsafe=args.calib_continue_after_unsafe,
+        partition=partition, epsilon_grid=args.epsilon_grid,
+        dimensional_scores=True,
     )
     summary = cs.summarize(logs)
+    covered = sum(calibration.rollout_is_covered(scores) for scores in heldout_scores)
+    coverage = covered / len(heldout_scores)
+    # Wilson interval describes sampling uncertainty; it is not a proof of the target.
+    z = 1.959963984540054
+    n = len(heldout_scores)
+    center = (coverage + z*z/(2*n))/(1+z*z/n)
+    half = z*math.sqrt(coverage*(1-coverage)/n+z*z/(4*n*n))/(1+z*z/n)
     deployment_logs = cs.evaluate_method(
         world=world, control_bounds=bounds, variant=variant, cbvf=cbvf,
         policy=policy, tau=tau, init_states=starts, method="cp", xi=0.,
@@ -225,7 +245,11 @@ def main() -> None:
         "horizon_override": ns.horizon,
         "residual_scale_override": ns.residual_scale,
         "target_simultaneous_coverage": 1. - float(args.delta_traj),
-        "empirical_simultaneous_coverage": summary["simultaneous_buffer_coverage"],
+        "empirical_simultaneous_coverage": coverage,
+        "covered_episodes": covered,
+        "coverage_wilson_95": [center-half, center+half],
+        "score_population_matches_calibration": True,
+        "heldout_regional_scores": heldout_scores,
         "unsafe_rate": summary["unsafe_rate"], "goal_rate": summary["goal_rate"],
         "mean_return": summary["mean_return"],
         "disjointness": split,
@@ -239,6 +263,15 @@ def main() -> None:
         ],
     }
     output = ns.output or (run_dir / "heldout_reference_coverage.json")
+    def finite_json(value):
+        if isinstance(value, dict):
+            return {k: finite_json(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [finite_json(v) for v in value]
+        if isinstance(value, (float, np.floating)) and not math.isfinite(value):
+            return None
+        return value
+    payload = finite_json(payload)
     output.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
     print(json.dumps({k: v for k, v in payload.items() if k not in ("raw_rollouts", "offline_feasibility_audit", "calibration")}, indent=2))
 

@@ -1,0 +1,146 @@
+{
+  "configuration": {
+    "beta": 0.43,
+    "vmin": -0.15,
+    "orbit_trigger": 0.0,
+    "waypoint_x": -0.9,
+    "gamma": 1.5,
+    "dt": 0.002,
+    "duration": 25.0,
+    "route_switch_time": 8.0,
+    "route_waypoint_x": -1.4,
+    "route_waypoint_y": -1.2,
+    "route_gate_x": -1.2,
+    "initial_theta": 0.7,
+    "reset_jitter": 0.02,
+    "reverse_duration": 2.0,
+    "n_calibration": 199,
+    "delta": 0.01,
+    "design_only": false,
+    "activation_threshold": 1.0,
+    "residual_scale": 0.02
+  },
+  "training": {
+    "algorithm": "sac_lag",
+    "max_steps": 20000,
+    "start_training": 1000,
+    "reference_proposal_steps": 1000,
+    "batch_size": 256,
+    "hidden_dims": [
+      256,
+      256
+    ],
+    "actor_lr": 0.0003,
+    "critic_lr": 0.0003,
+    "temp_lr": 0.0003,
+    "lag_lr": 0.0003,
+    "discount": 0.99,
+    "tau": 0.005,
+    "num_qs": 2,
+    "num_min_qs": null,
+    "critic_dropout_rate": null,
+    "critic_layer_norm": false,
+    "target_entropy": -1.0,
+    "init_temperature": 0.1,
+    "init_lag": 0.0,
+    "backup_entropy": true,
+    "cost_limit": 1.0,
+    "utd_ratio": 1,
+    "residual_scale": 0.02,
+    "replay_capacity": 20000,
+    "training_condition": "aligned",
+    "training_filter": "nominal",
+    "observation": "[x,y,cos(theta),sin(theta),goal_x,goal_y]; time-dependent shared reference is composed outside residual network",
+    "reward": "-dt*distance_to_goal(next_state)+100*goal-100*collision",
+    "cost": "1 on exact-arc collision, 0 otherwise",
+    "termination": "exact-arc collision or endpoint goal; horizon truncation bootstraps",
+    "logging_interval": 1000
+  },
+  "conditions": {
+    "aligned": {
+      "vmin": -0.2,
+      "beta": 0.8
+    },
+    "easy": {
+      "vmin": -0.175,
+      "beta": 0.625
+    },
+    "hard": {
+      "vmin": -0.15,
+      "beta": 0.43
+    }
+  },
+  "model": {
+    "vmax": 0.6,
+    "vmin": -0.2,
+    "beta": 0.8
+  },
+  "geometry": {
+    "obstacle_center": [
+      0,
+      0
+    ],
+    "obstacle_radius": 0.5,
+    "robot_radius": 0.2,
+    "goal": [
+      0,
+      1.8
+    ],
+    "goal_radius": 0.5,
+    "audit_world": [
+      -4,
+      4,
+      -4,
+      4
+    ]
+  },
+  "reset": {
+    "center": [
+      -0.9,
+      -3,
+      0.7
+    ],
+    "independent_uniform_half_width": 0.02
+  },
+  "certificate": {
+    "B": "hypot(x,y)-0.7, exact discounted safety value on B>=0 for reversible nominal model",
+    "Cx": 1.0,
+    "L": "hypot(gamma+0.6/(r-0.6*Delta),0.6)",
+    "epsilon": "L*(Cx+1)*Delta",
+    "activation": "B<=1; no release hysteresis",
+    "qp": "min ||u-u_nom||^2, u in [-1,1]^2; Psi_model>=epsilon+(xi if CP else 0)",
+    "true_dynamics_in_uncal_controller": false,
+    "integration": "exact constant-control unicycle flow and exact arc radial minimum"
+  },
+  "qualification_directories": [
+    "/home/mars/Desktop/conformal shield/results_mechanism_v6/queue_design_001/hard_seed940001",
+    "/home/mars/Desktop/conformal shield/results_mechanism_v6/queue_design_001/hard_seed940002",
+    "/home/mars/Desktop/conformal shield/results_mechanism_v6/queue_design_001/aligned_seed940003",
+    "/home/mars/Desktop/conformal shield/results_mechanism_v6/queue_design_001/easy_seed940004"
+  ],
+  "entry": {
+    "id": 1,
+    "n_calibration": 199,
+    "delta": 0.01,
+    "qualification_seed_base": 940001,
+    "final_training_seeds": [
+      111000001,
+      112000001,
+      113000001,
+      114000001,
+      115000001
+    ]
+  },
+  "training_runs": 5,
+  "evaluation_runs": 45,
+  "episodes_per_evaluation": 100,
+  "heldout_reference_rollouts_per_condition_seed": 100,
+  "heldout_deployment_rollouts_per_condition_seed": 100,
+  "representative": "first rollout only, all intervals",
+  "standard_deviation": "sample standard deviation across five training seeds, ddof=1",
+  "limitations": [
+    "Finite-grid feasibility plus strict runtime checks is not a global continuous-state feasibility theorem.",
+    "Split-conformal coverage refers to uncalibrated-filter reference rollouts; deployment coverage is separately empirical.",
+    "Learned policy is a bounded residual on a specified shared reference; this is not a learning-efficiency comparison."
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "criteria": {
+    "frozen_hashes": true,
+    "final_45_runs": true,
+    "five_fresh_shared_actors": true,
+    "all_condition_seed_acceptance": true,
+    "zero_exhaustive_infeasibility": true,
+    "strictly_positive_feasibility": true,
+    "heldout_coverage": true,
+    "independent_interval_reconstruction": true,
+    "hard_uncal_separation": true,
+    "goal_success": true,
+    "nontrivial_mismatch_buffers": true,
+    "zero_aligned_buffers": true,
+    "paper_figures": true
+  },
+  "exhaustive_audits": 30,
+  "unique_node_evaluations": 81000,
+  "node_interval_checks": 968226000,
+  "infeasible_node_intervals": 0,
+  "representative_traces": 90,
+  "representative_intervals": 449040,
+  "representative_subinterval_checks": 1796160,
+  "coverage_min": 96,
+  "coverage_max": 100
+}

@@ -1,20 +1,8 @@
-"""
-solver_cbvf.py  –  Robust HJ/CBVF backward-time solver for conformal CBVF shielding.
+"""Backward-lookback HJ/CBVF solver matching the manuscript VI.
 
-This file keeps the numerically stable solver path from the last working
-revision. The outer experiment script now handles the latest experimental
-changes: stronger CP diagnostics, anti-livelock release in the CP-only
-activation band, and safer preflight grid-size checks.
-
-This solver keeps the earlier fixes and adds numerical guards that match
-what the recent runtime logs show:
-
-1. Hamiltonian/flux arrays are never treated like value functions.
-2. The maxCBF exponential uses exp(-γ·dt), not exp(+γ·dt).
-3. Backend fluxes are sanitized before they update V.
-4. Midpoint updates are done in float64 and clipped before casting back.
-5. If RK2 becomes unstable on a micro-step, the solver falls back to Euler,
-   and then to a conservative hold step instead of crashing.
+For lookback s=-t, U_s = max_u grad(U).f + gamma U, constrained by U<=l.
+The spatial operator uses SSP-RK2 and the reaction uses its exact positive
+exponential (Lie splitting). Dense backend tensors are mandatory.
 """
 
 import time
@@ -95,20 +83,15 @@ def _clip_candidate(arr: np.ndarray, lo: float, hi: float) -> np.ndarray:
 
 def _sanitize_flux(arr: np.ndarray, dt: float, max_abs_value: float, factor: float = 8.0) -> np.ndarray:
     """
-    Make the backend Hamiltonian numerically safe for one micro-step.
-
-    The ODP backend occasionally emits NaN/Inf spatial flux values on difficult
-    micro-steps. Those are not meaningful physical values; they are numerical
-    pathologies. Replacing them by zero and clipping the remaining finite fluxes
-    prevents the offline solve from crashing while keeping the one-step update
-    bounded.
+    Reject invalid backend flux instead of silently changing the PDE.
     """
     out = np.asarray(arr, dtype=np.float64)
     if not np.isfinite(out).all():
-        out = np.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+        raise FloatingPointError("Non-finite HJ spatial flux; this solve is invalid.")
     dt_safe = max(float(dt), 1e-12)
     flux_cap = max(float(factor) * float(max_abs_value) / dt_safe, 1.0)
-    out = np.clip(out, -flux_cap, flux_cap)
+    if np.max(np.abs(out)) > flux_cap:
+        raise FloatingPointError("HJ spatial flux exceeds the numerical guard; this solve is invalid.")
     return out
 
 
@@ -125,7 +108,7 @@ def _finalize_candidate(
     """Apply the maxCBF clamp and hard bounds in float64."""
     out = np.asarray(candidate, dtype=np.float64)
     if target_mode == "maxCBF":
-        out = np.minimum(out * np.exp(-gamma_val * float(dt)), np.asarray(l0_step_next, dtype=np.float64))
+        out = np.minimum(out * np.exp(gamma_val * float(dt)), np.asarray(l0_step_next, dtype=np.float64))
     out = np.clip(out, lo, hi)
     return out
 
@@ -190,6 +173,12 @@ def HJSolver(
         init_target = target
 
     init_target = np.asarray(init_target, dtype=np.float32)
+    expected_shape = tuple(int(n) for n in grid.pts_each_dim)
+    if init_target.shape != expected_shape:
+        raise ValueError(
+            f"Target shape {init_target.shape} must equal backend grid shape {expected_shape}; "
+            "broadcast sparse geometry before calling HJSolver."
+        )
     if constraint is None:
         init_value = init_target
     else:
@@ -262,7 +251,7 @@ def HJSolver(
                 )
             dt = min(float(tau[i]) - t_now, dt)
 
-            # --- Runge-Kutta midpoint corrector ---
+            # --- SSP-RK2 spatial update, followed by exact reaction ---
             # ham_now and ham_mid are spatial fluxes (dV/dt) — large values
             # are expected and normal.  Do NOT check their magnitude.
             # The important detail is that the intermediate arithmetic must be
@@ -279,8 +268,8 @@ def HJSolver(
             _check_value("value slice", v_now, max_abs_value)
             lo_clip, hi_clip = _numeric_clip_bounds(value_clip_lo, value_clip_hi, max_abs_value)
 
-            # Midpoint predictor (bounded in float64 before the backend sees it).
-            V_mid_pred = _clip_candidate(v_now + ham_now * dt * 0.5, lo_clip, hi_clip)
+            # Full forward-Euler predictor for SSP-RK2.
+            V_mid_pred = _clip_candidate(v_now + ham_now * dt, lo_clip, hi_clip)
             if not np.isfinite(V_mid_pred).all():
                 V_mid_pred = _clip_candidate(v_now, lo_clip, hi_clip)
 
@@ -288,7 +277,7 @@ def HJSolver(
             Hamiltonian_tmp = hcl.asarray(np.zeros(tuple(grid.pts_each_dim), dtype=np.float32))
             delta_t_tmp = hcl.asarray(np.zeros(1, dtype=np.float32))
 
-            t_mid_val = t_now + 0.5 * dt
+            t_mid_val = t_now + dt
             t_tmp = hcl.asarray(np.array([t_mid_val], dtype=np.float32))
 
             if l0_is_callable:
@@ -311,7 +300,7 @@ def HJSolver(
                 l0_step_next = l0_step
 
             gamma_val = float(compMethod.get("cbf_gamma", 0.0))
-            rk2_candidate = 0.5 * (v_now + _clip_candidate(v_now + ham_mid * dt, lo_clip, hi_clip))
+            rk2_candidate = 0.5 * (v_now + _clip_candidate(V_mid_pred + ham_mid * dt, lo_clip, hi_clip))
             rk2_candidate = _finalize_candidate(
                 rk2_candidate,
                 target_mode=compMethod["TargetSetMode"],

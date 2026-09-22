@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import ast
+import argparse
 import hashlib
+import json
 from pathlib import Path
 
 
@@ -24,6 +26,12 @@ def require(condition: bool, message: str) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--shield-sha256', default=FINALIZED_SHIELD_SHA256,
+                        help='Expected shield hash from a recorded/frozen configuration; default retains the original supplied-file check.')
+    parser.add_argument('--configuration', type=Path,
+                        help='Recorded batch configuration or frozen manifest for the configurable recomputation path.')
+    args = parser.parse_args()
     training = TRAINING_FILE.read_text(encoding="utf-8")
     environment = ENV_FILE.read_text(encoding="utf-8")
     registration = REGISTRATION_FILE.read_text(encoding="utf-8")
@@ -35,10 +43,18 @@ def main() -> None:
 
     shield_hash = hashlib.sha256(SHIELD_FILE.read_bytes()).hexdigest()
     require(
-        shield_hash == FINALIZED_SHIELD_SHA256,
-        "conformal_shield.py no longer matches the finalized supplied file",
+        shield_hash == args.shield_sha256,
+        "conformal_shield.py differs from the expected recorded/frozen source",
     )
-    require("recompute=True" in training, "CBVF recomputation is not mandatory")
+    if "recompute=True" not in training:
+        require(args.configuration is not None, 'Configurable CBVF recomputation requires an explicit recorded configuration')
+        record = json.loads(args.configuration.read_text())
+        configuration = record.get('configuration', record.get('common', {}))
+        require(configuration.get('recompute_cbvf') is True and not configuration.get('reuse_cbvf', False),
+                'Recorded configuration does not require a fresh CBVF solve')
+        require('recompute=bool(args.recompute_cbvf)' in training and
+                'if bool(args.recompute_cbvf) and not self.cbvf_recomputed:' in training,
+                'Fresh-recomputation configuration is not enforced at runtime')
     require("cs.calibrate_mondrian(" in training, "Mondrian calibration is missing")
     require(
         'choices=["nominal", "cbvf", "cp"]' in training

@@ -57,15 +57,29 @@ def _obs_from_state(state: np.ndarray, goal: Tuple[float, float]) -> np.ndarray:
     return np.array([state[0], state[1], np.cos(th), np.sin(th), gx, gy], dtype=np.float32)
 
 
-def _reference_warmup_action(state: np.ndarray, beta_u: float) -> np.ndarray:
+def _reference_warmup_action(state: np.ndarray, beta_u: float,
+                             goal: Tuple[float, float] = (2.0, 2.0),
+                             waypoint: Tuple[float, float] = (-0.65, 0.65),
+                             orbit_trigger_radius: float = 0.0,
+                             orbit_radius: float = 1.0,
+                             orbit_gain: float = 2.0) -> np.ndarray:
     """Pure-pursuit demonstrator used only to seed off-policy replay."""
     state = np.asarray(state, dtype=float)
-    waypoint = np.array([-0.65, 0.65], dtype=float)
-    goal = np.array([2.0, 2.0], dtype=float)
+    waypoint = np.asarray(waypoint, dtype=float)
+    goal = np.asarray(goal, dtype=float)
     # The y-threshold is a memoryless, monotone phase switch: unlike a radius
     # test it cannot switch back to the waypoint after the car departs it.
     target = waypoint if state[1] < 0.45 else goal
-    desired = math.atan2(target[1] - state[1], target[0] - state[0])
+    direction = target - state[:2]
+    radius = float(np.linalg.norm(state[:2]))
+    if state[1] < 0.45 and 0.0 < radius < orbit_trigger_radius:
+        # Shared, memoryless reference around the origin-centered obstacle.
+        # The clockwise tangent advances along its left side.  The radial
+        # term points outward inside the reference circle, eliminating the
+        # inward waypoint direction that can deadlock a speed-projecting QP.
+        direction = (np.array([state[1], -state[0]]) / radius
+                     + orbit_gain * (orbit_radius - radius) * state[:2] / radius)
+    desired = math.atan2(direction[1], direction[0])
     error = (desired - float(state[2]) + math.pi) % (2.0 * math.pi) - math.pi
     yaw = np.clip(1.5 * error / max(float(beta_u), 1e-6), -1.0, 1.0)
     return np.array([1.0, yaw], dtype=np.float32)
@@ -119,9 +133,17 @@ class AgentPolicyCallable:
         residual_scale: float = 0.0,
         use_frozen_residual: bool = False,
         stochastic: bool = True,
+        waypoint: Tuple[float, float] = (-0.65, 0.65),
+        orbit_trigger_radius: float = 0.0,
+        orbit_radius: float = 1.0,
+        orbit_gain: float = 2.0,
     ):
         self.agent = agent
         self.goal = goal
+        self.waypoint = waypoint
+        self.orbit_trigger_radius = orbit_trigger_radius
+        self.orbit_radius = orbit_radius
+        self.orbit_gain = orbit_gain
         self.lo = float(lo)
         self.hi = float(hi)
         self.model_beta_u = float(model_beta_u)
@@ -130,7 +152,8 @@ class AgentPolicyCallable:
         self.stochastic = bool(stochastic)
 
     def __call__(self, state: np.ndarray) -> np.ndarray:
-        reference = _reference_warmup_action(state, self.model_beta_u)
+        reference = _reference_warmup_action(state, self.model_beta_u, self.goal, self.waypoint,
+            self.orbit_trigger_radius, self.orbit_radius, self.orbit_gain)
         if not self.use_frozen_residual:
             return np.clip(reference, self.lo, self.hi)
         obs = _obs_from_state(np.asarray(state, dtype=float), self.goal)
@@ -191,6 +214,7 @@ class TrainingShield:
             truth=cs.DynamicsSpec(v=float(cfg.speed), beta_u=float(cfg.beta_u), v_min=float(cfg.speed_min)),
         )
         self.gamma = float(args.gamma)
+        self.certified_initial_B_floor = float(args.certified_initial_B_floor)
         self.residual_reference_scale = float(args.residual_reference_scale)
         self.dt = float(args.dt)
         self.horizon = int(args.horizon)
@@ -205,7 +229,9 @@ class TrainingShield:
         self.shield_cfg = cs.ShieldConfig(
             cbvf_activate_margin=float(args.cbvf_activate_margin),
             cp_activate_margin=float(args.cp_activate_margin),
+            release_margin=float(args.shield_release_margin),
         )
+        self.shield_release_margin = float(args.shield_release_margin)
         self.partition = cs.MondrianPartition(
             clearance_edges=cs.parse_strictly_increasing_floats(
                 args.mondrian_clearance_edges,
@@ -226,11 +252,26 @@ class TrainingShield:
             )
         )
         self.epsilon_inter = float(args.epsilon_inter)
+        self.intersample_protection = bool(args.intersample_protection)
+        true_speed_abs = max(
+            abs(float(self.variant.truth.v_min)),
+            abs(float(self.variant.truth.v)),
+        )
+        true_omega_abs = abs(float(self.variant.truth.beta_u)) * max_abs_u
+        self.C_x = float(math.hypot(true_speed_abs, true_omega_abs))
+        self.psi_lipschitz = None
+        self.eta_lipschitz = None
+        self.certified_epsilon_grid = float(args.epsilon_grid)
+        self.L_Psi_by_interval = np.zeros(self.horizon, dtype=float)
+        self.epsilon_inter_by_interval = np.full(
+            self.horizon, float(self.epsilon_inter), dtype=float
+        )
         self.calibration_stochastic_policy = bool(args.calibration_stochastic_policy)
         self.allow_infeasible_cp_diagnostic_run = bool(
             args.allow_infeasible_cp_diagnostic_run
         )
         self._is_shielding = False
+        self._local_certificate_cache: Dict[Tuple[float, float, float, int, int], Tuple[float, float]] = {}
 
         cache_dir = (
             Path(args.cache_dir).expanduser().resolve()
@@ -250,7 +291,7 @@ class TrainingShield:
             ny=int(args.cbvf_ny),
             nth=int(args.cbvf_nth),
             accuracy=str(args.solver_accuracy),
-            recompute=True,
+            recompute=bool(args.recompute_cbvf),
             odp_root=args.odp_root,
             solver_file=args.solver_file,
             target_shape=str(args.target_shape),
@@ -263,10 +304,61 @@ class TrainingShield:
             max_est_runtime_gb=float(args.max_est_runtime_gb),
             use_time_invariant_cbvf=bool(args.time_invariant_cbvf),
         )
-        if not self.cbvf_recomputed:
+        if bool(args.recompute_cbvf) and not self.cbvf_recomputed:
             raise RuntimeError(
                 "Fresh CBVF recomputation was required, but prepare_cbvf_table did not rebuild it."
             )
+        if self.intersample_protection:
+            self.cbvf.enable_continuous_time_interpolation(True)
+            self.psi_lipschitz = {
+                "method": "reachable_tube_local_piecewise_multilinear_bound",
+                "position_radius": true_speed_abs * self.dt,
+                "heading_radius": true_omega_abs * self.dt,
+                "uniform_over_normalized_control_box": True,
+                "uses_rollout_data": False,
+            }
+            self.eta_lipschitz = self.cbvf.certified_global_eta_time_lipschitz(
+                model_spec=self.variant.model, truth_spec=self.variant.truth
+            )
+            certified_eta_along_trajectory = (
+                float(self.eta_lipschitz["state_lipschitz_bound"]) * self.C_x
+                + float(self.eta_lipschitz["time_lipschitz_bound"])
+            )
+            self.eta_lipschitz["along_true_trajectory_time_lipschitz_bound"] = certified_eta_along_trajectory
+            self.eta_lipschitz["evaluation_grid_max_spacing"] = self.dt
+            # Calibration scores receive a tighter tube-local analytic margin
+            # inside trajectory_score.  This scalar remains an optional extra
+            # user-supplied margin and is never used to replace the certificate.
+            self.certified_epsilon_grid = float(args.epsilon_grid)
+
+        self.initial_B_box_range = None
+        if bool(getattr(args, "auto_certified_initial_B_floor", False)):
+            jitter_xy = float(args.start_jitter_xy)
+            jitter_th = float(args.start_jitter_theta)
+            bounds = (
+                (self.initial_state[0]-jitter_xy, self.initial_state[0]+jitter_xy),
+                (self.initial_state[1]-jitter_xy, self.initial_state[1]+jitter_xy),
+                (self.initial_state[2]-jitter_th, self.initial_state[2]+jitter_th),
+            )
+            axes = []
+            for (lo, hi), grid in zip(bounds, (self.cbvf.x_grid, self.cbvf.y_grid,
+                                                self.cbvf.th_grid)):
+                axes.append(np.unique(np.r_[lo, grid[(grid > lo) & (grid < hi)], hi]))
+            values = [
+                self.cbvf.value_grad_dt(np.array([x, y, th]), float(self.tau[0]))[0]
+                for x in axes[0] for y in axes[1] for th in axes[2]
+            ]
+            # A multilinear function reaches its extrema on the vertices of
+            # every crossed interpolation cell, so this is exact for the
+            # deployed numerical CBVF over the complete reset box.
+            self.initial_B_box_range = [float(min(values)), float(max(values))]
+            self.certified_initial_B_floor = float(min(values))
+            if self.initial_B_box_range[1] > self.shield_cfg.activation_threshold("cp", 0.0) + 1e-12:
+                raise RuntimeError(
+                    "The CP filter is not active over the complete initial box: "
+                    f"max B0={self.initial_B_box_range[1]:.9f} exceeds activation "
+                    f"{self.shield_cfg.activation_threshold('cp', 0.0):.9f}."
+                )
 
         # Calibration is completed before the caller resets the RL environment
         # for episode one.  The initial actor is fixed inside policy_for_calib,
@@ -283,6 +375,10 @@ class TrainingShield:
                 getattr(args, "post_training_recalibration", False)
             ),
             stochastic=self.calibration_stochastic_policy,
+            waypoint=(args.reference_waypoint_x,args.reference_waypoint_y),
+            orbit_trigger_radius=getattr(args, 'reference_orbit_trigger_radius', 0.0),
+            orbit_radius=getattr(args, 'reference_orbit_radius', 1.0),
+            orbit_gain=getattr(args, 'reference_orbit_gain', 2.0),
         )
         calibration_seed_offset = (
             30_000 if getattr(args, "post_training_recalibration", False) else 20_000
@@ -294,31 +390,57 @@ class TrainingShield:
         for calibration_index in range(int(args.n_calib)):
             state = env.unwrapped.sample_initial_state(calibration_rng)
             B_initial, _, _ = self.cbvf.value_grad_dt(state, float(self.tau[0]))
-            if B_initial < 0.0:
+            if B_initial < self.certified_initial_B_floor:
                 raise RuntimeError(
                     "The shared environment/calibration start distribution produced "
-                    f"B(x0,t0)={B_initial:.6f}<0 at calibration sample "
+                    f"B(x0,t0)={B_initial:.6f} below certified floor "
+                    f"{self.certified_initial_B_floor:.6f} at calibration sample "
                     f"{calibration_index}. Reduce the start jitter or change the "
                     "configured initial state; calibration and RL starts are not "
                     "silently conditioned differently."
                 )
             calibration_states.append(np.asarray(state, dtype=float))
-        self.mondrian_calibration, self.calibration_stats = cs.calibrate_mondrian(
-            world=self.world,
-            control_bounds=self.control_bounds,
-            variant=self.variant,
-            cbvf=self.cbvf,
-            policy=policy_for_calib,
-            tau=self.tau,
-            init_states=calibration_states,
-            gamma=self.gamma,
-            delta_traj=float(args.delta_traj),
-            shield_cfg=self.shield_cfg,
-            continue_after_unsafe=bool(args.calib_continue_after_unsafe),
-            partition=self.partition,
-            epsilon_grid=float(args.epsilon_grid),
-        )
+        loaded_manifest = None
+        if args.calibration_manifest_in:
+            with Path(args.calibration_manifest_in).expanduser().open("r", encoding="utf-8") as handle:
+                loaded_manifest = json.load(handle)
+            saved = loaded_manifest["mondrian_calibration"]
+            if tuple(saved["clearance_edges"]) != tuple(self.partition.clearance_edges):
+                raise RuntimeError("Loaded calibration partition does not match configured edges.")
+            regions = saved["regions"]
+            groups = tuple(tuple(int(v) for v in row["base_regions"]) for row in regions)
+            self.mondrian_calibration = cs.MondrianCalibration(
+                partition=self.partition, effective_groups=groups,
+                base_to_effective=tuple(int(v) for v in saved["base_to_effective"]),
+                buffers=tuple(float(row["xi_hat_off"]) for row in regions),
+                deltas=tuple(float(row["delta_m"]) for row in regions),
+                counts=tuple(int(row["n_scores"]) for row in regions),
+                delta_traj=float(saved["delta_traj"]),
+                epsilon_grid=float(saved["epsilon_grid"]),
+                promotion_rounds=int(saved["promotion_rounds"]),
+            )
+            self.calibration_stats = loaded_manifest["calibration_stats"]
+            self.calibration_stats["loaded_frozen_design_calibration"] = True
+        else:
+            self.mondrian_calibration, self.calibration_stats = cs.calibrate_mondrian(
+                world=self.world, control_bounds=self.control_bounds,
+                variant=self.variant, cbvf=self.cbvf, policy=policy_for_calib,
+                tau=self.tau, init_states=calibration_states, gamma=self.gamma,
+                delta_traj=float(args.delta_traj), shield_cfg=self.shield_cfg,
+                continue_after_unsafe=bool(args.calib_continue_after_unsafe),
+                partition=self.partition, epsilon_grid=self.certified_epsilon_grid,
+                dimensional_scores=True,
+            )
         self.xi_hat = float(self.mondrian_calibration.max_buffer)
+        phase = "final" if getattr(args, "post_training_recalibration", False) else "pretraining"
+        calibration_checkpoint = Path(args.checkpoint_dir) / (phase + "_calibration_before_audit.json")
+        calibration_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        calibration_checkpoint.write_text(json.dumps({
+            "mondrian_calibration": self.mondrian_calibration.as_dict(),
+            "calibration_stats": self.calibration_stats,
+            "stage": "calibration_complete_audit_pending",
+        }, indent=2) + "\n")
+        print(f"{phase} calibration complete; exhaustive audit starts (xi_max={self.xi_hat:.9f}).", flush=True)
         if not np.isfinite(self.xi_hat) or self.xi_hat > float(args.max_reasonable_xi):
             raise RuntimeError(
                 f"Maximum regional xi_hat={self.xi_hat:.6g} is invalid or exceeds "
@@ -361,7 +483,76 @@ class TrainingShield:
             dt=self.dt,
             horizon=self.horizon,
         )
-        self.offline_feasibility_audit = self._audit_cp_feasibility_grid()
+        audit_source_manifest = loaded_manifest
+        dominance_mode = False
+        if getattr(args, "audit_dominating_manifest_in", None):
+            with Path(args.audit_dominating_manifest_in).expanduser().open("r", encoding="utf-8") as handle:
+                audit_source_manifest = json.load(handle)
+            dominance_mode = True
+        if bool(getattr(args, "reuse_zero_offline_audit", False)):
+            if audit_source_manifest is None:
+                raise RuntimeError(
+                    "--reuse-zero-offline-audit requires a calibration or dominating audit manifest."
+                )
+            saved_audit = audit_source_manifest["offline_cp_qp_feasibility_audit"]
+            checks = [
+                (Path(audit_source_manifest["cbvf_path"]).resolve() == Path(self.cbvf_path).resolve(), "CBVF path"),
+                (bool(audit_source_manifest["intersample_protection"]) == self.intersample_protection, "inter-sample mode"),
+                (abs(float(audit_source_manifest["C_x"])-self.C_x) <= 1e-12, "C_x"),
+                (audit_source_manifest["model"] == {"speed": self.variant.model.v,
+                    "speed_min": self.variant.model.v_min, "beta_u": self.variant.model.beta_u}, "model"),
+                (audit_source_manifest["truth"] == {"speed": self.variant.truth.v,
+                    "speed_min": self.variant.truth.v_min, "beta_u": self.variant.truth.beta_u}, "truth"),
+                (abs(float(saved_audit["certified_initial_B_floor"])-self.certified_initial_B_floor) <= 1e-12,
+                 "initial B floor"),
+            ]
+            source_shield = audit_source_manifest["shield_config"]
+            checks.append((
+                abs(float(source_shield["cbvf_activate_margin"])-self.shield_cfg.cbvf_activate_margin) <= 1e-12
+                and abs(float(source_shield["cp_activate_margin"])-self.shield_cfg.cp_activate_margin) <= 1e-12,
+                "shield activation configuration",
+            ))
+            if dominance_mode:
+                source_cal = audit_source_manifest["mondrian_calibration"]
+                checks.append((
+                    tuple(source_cal["base_to_effective"])
+                    == tuple(self.mondrian_calibration.base_to_effective),
+                    "Mondrian effective-region mapping",
+                ))
+                source_buffers = tuple(float(row["xi_hat_off"])
+                                       for row in source_cal["regions"])
+                checks.append((
+                    all(cur <= upper + 1e-12 for cur, upper in
+                        zip(self.mondrian_calibration.buffers, source_buffers)),
+                    "componentwise dominating regional buffers",
+                ))
+            else:
+                checks.append((
+                    audit_source_manifest["shield_config"] == self.shield_cfg.describe(self.xi_hat),
+                    "shield configuration",
+                ))
+            failed = [label for ok, label in checks if not ok]
+            if failed:
+                # A reuse mismatch says nothing about feasibility of the
+                # current, freshly calibrated filter.  Certify that filter
+                # directly instead of weakening its buffers or treating a
+                # failed monotonicity shortcut as a failed configuration.
+                print(
+                    "Frozen zero-audit reuse unavailable; running fresh exhaustive audit: "
+                    + ", ".join(failed)
+                )
+                self.offline_feasibility_audit = self._audit_cp_feasibility_grid()
+                self.offline_feasibility_audit["reused_frozen_zero_audit"] = False
+                self.offline_feasibility_audit["audit_reuse_rejection_reasons"] = failed
+                self.offline_feasibility_audit["componentwise_buffer_dominance"] = False
+            else:
+                if int(saved_audit["n_infeasible_grid_nodes"]) != 0 or not bool(saved_audit["discrete_grid_gate_passed"]):
+                    raise RuntimeError("Refusing to reuse a nonzero or failed offline audit.")
+                self.offline_feasibility_audit = dict(saved_audit)
+                self.offline_feasibility_audit["reused_frozen_zero_audit"] = True
+                self.offline_feasibility_audit["componentwise_buffer_dominance"] = bool(dominance_mode)
+        else:
+            self.offline_feasibility_audit = self._audit_cp_feasibility_grid()
         print(
             "Mandatory training shield ready: method=mondrian_cp, "
             f"model=(v={self.variant.model.v}, beta={self.variant.model.beta_u}), "
@@ -387,6 +578,15 @@ class TrainingShield:
             f"min_margin="
             f"{self.offline_feasibility_audit['min_feasibility_margin']:.6f}"
         )
+        if self.intersample_protection:
+            print(
+                "Inter-sample certificate: "
+                f"C_x={self.C_x:.9f}, "
+                f"L_Psi_range=[{self.offline_feasibility_audit['L_Psi_min']:.9f}, "
+                f"{self.offline_feasibility_audit['L_Psi_max']:.9f}], "
+                f"epsilon_inter_range=[{self.offline_feasibility_audit['epsilon_inter_min']:.9f}, "
+                f"{self.offline_feasibility_audit['epsilon_inter_max']:.9f}]"
+            )
         cs.print_calibration_stats(self.calibration_stats, variant_name=self.variant.name)
 
     def _audit_cp_feasibility_grid(self) -> Dict[str, Any]:
@@ -401,7 +601,18 @@ class TrainingShield:
         nx, ny, nth, nt = cbvf.B_table.shape
         regional_buffer_xy = np.empty((nx, ny), dtype=float)
         candidate_count_xy = np.empty((nx, ny), dtype=int)
-        travel_radius = float(self.speed_envelope * self.dt)
+        # Mondrian regions depend only on position clearance.  The unicycle's
+        # heading rate must not inflate this radius: ||Delta p|| is bounded by
+        # v_max*dt exactly, whereas C_x also contains omega_max.
+        truth_vmax = max(abs(float(self.variant.truth.v_min)),
+                         abs(float(self.variant.truth.v)))
+        truth_omegamax = abs(float(self.variant.truth.beta_u)) * max(
+            abs(float(self.control_bounds.lo)), abs(float(self.control_bounds.hi))
+        )
+        travel_radius = float(
+            (truth_vmax if self.intersample_protection else self.speed_envelope)
+            * self.dt
+        )
         for ix, x_value in enumerate(cbvf.x_grid):
             for iy, y_value in enumerate(cbvf.y_grid):
                 buffer_value, regions = self.mondrian_calibration.applied_buffer(
@@ -415,7 +626,8 @@ class TrainingShield:
         cos_theta = np.cos(theta)
         sin_theta = np.sin(theta)
         activation_upper = float(
-            self.shield_cfg.activation_threshold("cp", self.xi_hat) + 0.05
+            self.shield_cfg.activation_threshold("cp", self.xi_hat)
+            + self.shield_release_margin
         )
         tolerance = 1e-10
         n_active_certified = 0
@@ -424,39 +636,118 @@ class TrainingShield:
         min_margin = float("inf")
         min_uncalibrated_margin = float("inf")
         margin_sum = 0.0
+        audited_local_L_counts: Dict[float, int] = {}
+        audited_local_epsilon_counts: Dict[float, int] = {}
+        # Runtime decisions are typically much finer than the stored CBVF
+        # time grid (for example, dt=1 ms versus cbvf_dt=100 ms).  All
+        # decisions in one stored time-cell use the same certified local
+        # envelope at a given spatial node.  Cache dense per-cell grids so a
+        # node is evaluated once, while still auditing and counting every
+        # active node at every runtime decision interval below.
+        local_certificate_grids: Dict[
+            Tuple[int, int], Tuple[np.ndarray, np.ndarray]
+        ] = {}
         worst: Optional[Dict[str, Any]] = None
+
+        # Conservative structural outer reach set from the complete continuous
+        # reset box.  This removes grid nodes that violate the exact unicycle
+        # travel/turn limits without relying on observed trajectories.
+        x_mesh, y_mesh = np.meshgrid(cbvf.x_grid, cbvf.y_grid, indexing="ij")
+        jitter_xy = float(self.args.start_jitter_xy)
+        x0_lo, x0_hi = self.initial_state[0]-jitter_xy, self.initial_state[0]+jitter_xy
+        y0_lo, y0_hi = self.initial_state[1]-jitter_xy, self.initial_state[1]+jitter_xy
+        dx0 = np.maximum(np.maximum(x0_lo-x_mesh, 0.0), x_mesh-x0_hi)
+        dy0 = np.maximum(np.maximum(y0_lo-y_mesh, 0.0), y_mesh-y0_hi)
+        position_distance_from_initial_box = np.hypot(dx0, dy0)
+        heading_mid = float(self.initial_state[2])
+        heading_half = float(self.args.start_jitter_theta)
+        heading_mid_distance = np.abs(
+            (cbvf.th_grid-heading_mid+np.pi) % (2.0*np.pi)-np.pi
+        )
+        heading_distance_from_initial_interval = np.maximum(
+            heading_mid_distance-heading_half, 0.0
+        )
 
         # Audit only table slices that can be queried at a control decision.
         # The terminal guard deliberately keeps the deployed horizon away from
         # the terminal target slice, where steering has relative degree two and
         # an instantaneous first-order CBVF-QP need not be feasible.
-        runtime_time_indices = sorted({
-            int(np.argmin(np.abs(cbvf.tau - float(t))))
-            for t in self.tau[:-1]
-        })
-        for time_index in runtime_time_indices:
-            B_slice = cbvf.B_table[..., time_index]
-            if nt == 1:
-                DtB_slice = np.zeros_like(B_slice)
-            elif time_index < nt - 1:
-                DtB_slice = (
-                    cbvf.B_table[..., time_index + 1] - B_slice
-                ) / float(cbvf.dt)
+        runtime_queries = [
+            (j, float(t), int(np.argmin(np.abs(cbvf.tau - float(t)))))
+            for j, t in enumerate(self.tau[:-1])
+        ]
+        runtime_time_indices = sorted({row[2] for row in runtime_queries})
+        for interval_index, query_time, time_index in runtime_queries:
+            if self.intersample_protection:
+                B_slice = cbvf._field_at_time(cbvf.B_table, query_time)
+                DtB_slice = cbvf._field_at_time(cbvf.gt, query_time)
+                gx_slice = cbvf._field_at_time(cbvf.gx, query_time)
+                gy_slice = cbvf._field_at_time(cbvf.gy, query_time)
+                gth_slice = cbvf._field_at_time(cbvf.gth, query_time)
             else:
-                DtB_slice = (
-                    B_slice - cbvf.B_table[..., time_index - 1]
-                ) / float(cbvf.dt)
+                B_slice = cbvf.B_table[..., time_index]
+                if nt == 1:
+                    DtB_slice = np.zeros_like(B_slice)
+                elif time_index < nt - 1:
+                    DtB_slice = (
+                        cbvf.B_table[..., time_index + 1] - B_slice
+                    ) / float(cbvf.dt)
+                else:
+                    DtB_slice = (
+                        B_slice - cbvf.B_table[..., time_index - 1]
+                    ) / float(cbvf.dt)
+                gx_slice = cbvf.gx[..., time_index]
+                gy_slice = cbvf.gy[..., time_index]
+                gth_slice = cbvf.gth[..., time_index]
             heading_derivative = (
-                cbvf.gx[..., time_index] * cos_theta
-                + cbvf.gy[..., time_index] * sin_theta
+                gx_slice * cos_theta
+                + gy_slice * sin_theta
             )
-            sensitivity = np.abs(heading_derivative) + np.abs(
-                cbvf.gth[..., time_index]
+            elapsed = float(query_time - self.tau[0])
+            interval_floor = self.certified_initial_B_floor * math.exp(
+                -float(self.gamma) * elapsed
             )
-            requested_rhs = (
-                regional_buffer_xy[:, :, np.newaxis] * sensitivity
-                + float(self.epsilon_inter)
+            structurally_reachable = (
+                (position_distance_from_initial_box[:, :, np.newaxis]
+                 <= truth_vmax*elapsed + 1e-12)
+                & (heading_distance_from_initial_interval[np.newaxis, np.newaxis, :]
+                   <= truth_omegamax*elapsed + 1e-12)
             )
+            active_certified = (
+                (B_slice >= interval_floor) & (B_slice <= activation_upper)
+                & structurally_reachable
+            )
+            active_count = int(np.count_nonzero(active_certified))
+            if active_count == 0:
+                continue
+            local_epsilon = np.zeros_like(B_slice, dtype=float)
+            local_L = np.zeros_like(B_slice, dtype=float)
+            if self.intersample_protection:
+                t_start = float(self.tau[interval_index])
+                t_end = float(self.tau[interval_index + 1])
+                k0, _ = cbvf._time_cell_and_weight(t_start)
+                k1, _ = cbvf._time_cell_and_weight(t_end)
+                cell_key = (int(k0), int(k1))
+                cached_grids = local_certificate_grids.get(cell_key)
+                if cached_grids is None:
+                    L_grid = cbvf.certified_grid_psi_lipschitz(
+                        t_start=t_start, t_end=t_end,
+                        position_radius=truth_vmax*self.dt,
+                        heading_radius=truth_omegamax*self.dt,
+                        model_spec=self.variant.model, gamma=self.gamma,
+                    )
+                    cached_grids = (
+                        L_grid, L_grid*(self.C_x+1.0)*self.dt,
+                    )
+                    local_certificate_grids[cell_key] = cached_grids
+                local_L, local_epsilon = cached_grids
+                for value, count in zip(*np.unique(local_L[active_certified], return_counts=True)):
+                    key = float(value)
+                    audited_local_L_counts[key] = audited_local_L_counts.get(key, 0) + int(count)
+                for value, count in zip(*np.unique(local_epsilon[active_certified], return_counts=True)):
+                    key = float(value)
+                    audited_local_epsilon_counts[key] = audited_local_epsilon_counts.get(key, 0) + int(count)
+            requested_rhs = regional_buffer_xy[:, :, np.newaxis] + local_epsilon
             model_speed_center = 0.5 * (
                 self.variant.model.v + self.variant.model.v_min
             )
@@ -470,7 +761,7 @@ class TrainingShield:
             )
             a_throttle = heading_derivative * model_speed_half
             a_yaw = (
-                cbvf.gth[..., time_index]
+                gth_slice
                 * float(self.variant.model.beta_u)
             )
             max_u_psi = base + np.maximum(
@@ -481,12 +772,6 @@ class TrainingShield:
                 a_yaw * float(self.control_bounds.hi),
             )
             margins = max_u_psi - requested_rhs
-            active_certified = (
-                (B_slice >= 0.0) & (B_slice <= activation_upper)
-            )
-            active_count = int(np.count_nonzero(active_certified))
-            if active_count == 0:
-                continue
             active_margins = margins[active_certified]
             active_uncalibrated_margins = max_u_psi[active_certified]
             n_active_certified += active_count
@@ -519,11 +804,14 @@ class TrainingShield:
                         float(cbvf.th_grid[ith]),
                     ],
                     "table_time": float(cbvf.tau[time_index]),
+                    "decision_time": float(query_time),
                     "B": float(B_slice[ix, iy, ith]),
                     "xi_hat_app": float(
-                        requested_rhs[ix, iy, ith] - self.epsilon_inter
+                        requested_rhs[ix, iy, ith] - local_epsilon[ix, iy, ith]
                     ),
-                    "epsilon_inter": float(self.epsilon_inter),
+                    "C_x": float(self.C_x),
+                    "L_Psi_j": float(local_L[ix, iy, ith]),
+                    "epsilon_inter": float(local_epsilon[ix, iy, ith]),
                     "requested_xi": float(requested_rhs[ix, iy, ith]),
                     "max_u_psi": float(max_u_psi[ix, iy, ith]),
                     "feasibility_margin": float(margins[ix, iy, ith]),
@@ -537,20 +825,63 @@ class TrainingShield:
                 "The offline CP-QP feasibility audit found no certified active "
                 "CBVF grid nodes; the activation/envelope configuration is invalid."
             )
+        def distribution(counts: Dict[float, int]) -> Dict[str, float]:
+            if not counts:
+                return {key: 0.0 for key in
+                        ("min", "p05", "p25", "median", "p75", "p95", "max", "mean", "sample_std")}
+            values = np.asarray(sorted(counts), dtype=float)
+            weights = np.asarray([counts[float(v)] for v in values], dtype=np.int64)
+            cumulative = np.cumsum(weights)
+            total = int(cumulative[-1])
+            def weighted_quantile(q: float) -> float:
+                rank = q * max(0, total - 1)
+                return float(values[int(np.searchsorted(cumulative, rank + 1, side="left"))])
+            mean = float(np.dot(values, weights.astype(float)) / total)
+            variance_numerator = float(np.dot((values - mean) ** 2, weights.astype(float)))
+            return {
+                "min": float(values[0]), "p05": weighted_quantile(0.05),
+                "p25": weighted_quantile(0.25), "median": weighted_quantile(0.50),
+                "p75": weighted_quantile(0.75), "p95": weighted_quantile(0.95),
+                "max": float(values[-1]), "mean": mean,
+                "sample_std": math.sqrt(variance_numerator/(total-1)) if total > 1 else 0.0,
+            }
         return {
             "scope": (
-                "all_stored_space_time_cbvf_grid_nodes_with_"
-                "0_le_B_le_cp_activation_plus_hysteresis"
+                "all_stored_space_time_cbvf_grid_nodes_in_the_unicycle_"
+                "position_heading_outer_reach_set_and_B_invariant_envelope_"
+                "with_B_le_cp_activation_plus_hysteresis"
             ),
-            "continuous_envelope_proof": False,
+            "reachable_outer_set": {
+                "initial_x_interval": [float(x0_lo), float(x0_hi)],
+                "initial_y_interval": [float(y0_lo), float(y0_hi)],
+                "initial_heading_center": heading_mid,
+                "initial_heading_half_width": heading_half,
+                "position_radius_rate": float(truth_vmax),
+                "heading_radius_rate": float(truth_omegamax),
+                "uses_sampled_trajectories": False,
+            },
+            "continuous_envelope_proof": bool(self.intersample_protection),
             "continuous_envelope_note": (
-                "Discrete exhaustive gate plus runtime gating; a continuous "
-                "Assumption-5 claim still requires the paper's validated "
-                "interpolant/envelope bounds."
+                "For intersample runs, L_Psi,j is a global interval bound for "
+                "the continuous piecewise-linear numerical CBVF interpolant, "
+                "uniform over the physical model control box. Legacy runs use "
+                "only the discrete exhaustive gate."
             ),
             "grid_shape": [int(nx), int(ny), int(nth), int(nt)],
             "runtime_time_indices_audited": [int(i) for i in runtime_time_indices],
+            "runtime_decision_intervals_audited": int(len(runtime_queries)),
+            "intersample_protection": bool(self.intersample_protection),
+            "C_x": float(self.C_x),
+            "L_Psi_min": float(min(audited_local_L_counts)) if audited_local_L_counts else 0.0,
+            "L_Psi_max": float(max(audited_local_L_counts)) if audited_local_L_counts else 0.0,
+            "epsilon_inter_min": float(min(audited_local_epsilon_counts)) if audited_local_epsilon_counts else float(self.epsilon_inter),
+            "epsilon_inter_max": float(max(audited_local_epsilon_counts)) if audited_local_epsilon_counts else float(self.epsilon_inter),
+            "L_Psi_distribution": distribution(audited_local_L_counts),
+            "epsilon_inter_distribution": distribution(audited_local_epsilon_counts),
             "cbvf_terminal_guard": float(self.cbvf_terminal_guard),
+            "certified_initial_B_floor": float(self.certified_initial_B_floor),
+            "exact_initial_B_box_range": self.initial_B_box_range,
+            "certified_domain": "B(x,t)>=B_floor_initial*exp(-gamma*(t-t0))",
             "activation_upper": activation_upper,
             "n_active_certified_grid_nodes": int(n_active_certified),
             "n_infeasible_grid_nodes": int(n_infeasible),
@@ -569,6 +900,40 @@ class TrainingShield:
 
     def reset_episode(self) -> None:
         self._is_shielding = False
+
+    def _local_inter_sample_certificate(
+        self, state: np.ndarray, interval_index: int
+    ) -> Tuple[float, float]:
+        if not self.intersample_protection:
+            return 0.0, float(self.epsilon_inter)
+        t_start = float(self.tau[interval_index])
+        t_end = float(self.tau[interval_index + 1])
+        k0, _ = self.cbvf._time_cell_and_weight(t_start)
+        k1, _ = self.cbvf._time_cell_and_weight(t_end)
+        state_array = np.asarray(state, dtype=float)
+        cache_key = (
+            round(float(state_array[0]), 12), round(float(state_array[1]), 12),
+            round(float(state_array[2]), 12), int(k0), int(k1),
+        )
+        cached = self._local_certificate_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        max_abs_u = max(abs(self.control_bounds.lo), abs(self.control_bounds.hi))
+        v_max = max(abs(float(self.variant.truth.v_min)), abs(float(self.variant.truth.v)))
+        omega_max = abs(float(self.variant.truth.beta_u)) * max_abs_u
+        row = self.cbvf.certified_local_psi_lipschitz(
+            state=state_array,
+            t_start=t_start,
+            t_end=t_end,
+            position_radius=v_max * self.dt,
+            heading_radius=omega_max * self.dt,
+            model_spec=self.variant.model,
+            gamma=self.gamma,
+        )
+        local_L = float(row["L_Psi_j"])
+        result = (local_L, float(local_L * (self.C_x + 1.0) * self.dt))
+        self._local_certificate_cache[cache_key] = result
+        return result
 
     def metadata(self) -> Dict[str, Any]:
         return {
@@ -598,6 +963,16 @@ class TrainingShield:
             },
             "speed_envelope": float(self.speed_envelope),
             "epsilon_inter": float(self.epsilon_inter),
+            "intersample_protection": bool(self.intersample_protection),
+            "C_x": float(self.C_x),
+            "psi_lipschitz": self.psi_lipschitz,
+            "eta_lipschitz": self.eta_lipschitz,
+            "certified_epsilon_grid": float(self.certified_epsilon_grid),
+            "offline_local_certificate_range": {
+                key: self.offline_feasibility_audit[key]
+                for key in ("L_Psi_min", "L_Psi_max",
+                            "epsilon_inter_min", "epsilon_inter_max")
+            },
             "cbvf_terminal_guard": float(self.cbvf_terminal_guard),
             "infeasible_cp_policy": (
                 "explicit_diagnostic_least_violation_fallback"
@@ -631,7 +1006,10 @@ class TrainingShield:
                 "regional_buffer": 0.0,
                 "qp_rhs": 0.0,
                 "xi_hat_app": 0.0,
+                "C_x": float(self.C_x),
+                "L_Psi_j": 0.0,
                 "epsilon_inter": 0.0,
+                "total_qp_tightening": 0.0,
                 "requested_xi": 0.0,
                 "max_u_psi": None,
                 "feasibility_margin": None,
@@ -653,6 +1031,12 @@ class TrainingShield:
             )
         t_now = float(self.tau[int(step_in_episode)])
         state = np.asarray(state, dtype=float)
+        if method == "cp":
+            interval_L_Psi, interval_epsilon = self._local_inter_sample_certificate(
+                state, int(step_in_episode)
+            )
+        else:
+            interval_L_Psi, interval_epsilon = 0.0, 0.0
         B, _, _ = self.cbvf.value_grad_dt(state, t_now)
 
         regional_buffer = 0.0
@@ -660,20 +1044,24 @@ class TrainingShield:
         if method == "cp":
             regional_coefficient, candidate_regions = self.mondrian_calibration.applied_buffer(
                 state=state,
-                travel_radius=self.speed_envelope * self.dt,
+                travel_radius=(
+                    self.C_x if self.intersample_protection
+                    else self.speed_envelope
+                ) * self.dt,
             )
-            regional_buffer = float(regional_coefficient) * float(
-                self.cs.mismatch_sensitivity(state, t_now, self.cbvf)
-            )
+            # The paper calibrates the dimensional directional-rate error eta.
+            # Its regional quantile therefore enters the QP right-hand side
+            # directly; no state-dependent normalization is applied online.
+            regional_buffer = float(regional_coefficient)
         qp_rhs = self.shield_cfg.qp_rhs(method, regional_buffer)
         if method == "cp":
-            qp_rhs += self.epsilon_inter
+            qp_rhs += interval_epsilon
 
         activation_threshold = self.shield_cfg.activation_threshold(
             method,
             regional_buffer,
         )
-        release_buffer = 0.05 if self._is_shielding else 0.0
+        release_buffer = self.shield_release_margin if self._is_shielding else 0.0
         active = bool(B <= activation_threshold + release_buffer)
         self._is_shielding = active
         if not active:
@@ -686,7 +1074,10 @@ class TrainingShield:
                 "regional_buffer": float(regional_buffer),
                 "qp_rhs": float(qp_rhs),
                 "xi_hat_app": float(regional_buffer),
-                "epsilon_inter": float(self.epsilon_inter if method == "cp" else 0.0),
+                "C_x": float(self.C_x),
+                "L_Psi_j": interval_L_Psi,
+                "epsilon_inter": interval_epsilon,
+                "total_qp_tightening": float(qp_rhs),
                 "requested_xi": float(qp_rhs),
                 "max_u_psi": None,
                 "feasibility_margin": None,
@@ -752,7 +1143,10 @@ class TrainingShield:
             "regional_buffer": float(regional_buffer),
             "qp_rhs": float(qp_rhs),
             "xi_hat_app": float(regional_buffer),
-            "epsilon_inter": float(self.epsilon_inter if method == "cp" else 0.0),
+            "C_x": float(self.C_x),
+            "L_Psi_j": interval_L_Psi,
+            "epsilon_inter": interval_epsilon,
+            "total_qp_tightening": float(qp_rhs),
             "requested_xi": float(solution.requested_xi),
             "max_u_psi": float(solution.max_achievable_lhs),
             "feasibility_margin": feasibility_margin,
@@ -833,10 +1227,11 @@ def _reset_certified_env(
     obs, info = env.reset(seed=seed)
     state = np.asarray(env.unwrapped.state, dtype=float)
     B_initial, _, _ = shield.cbvf.value_grad_dt(state, float(shield.tau[0]))
-    if B_initial < 0.0:
+    if B_initial < shield.certified_initial_B_floor:
         raise RuntimeError(
             "The shared initial-state distribution produced an RL/evaluation "
-            f"start with B(x0,t0)={B_initial:.6f}<0. Calibration and deployment "
+            f"start with B(x0,t0)={B_initial:.6f} below certified floor "
+            f"{shield.certified_initial_B_floor:.6f}. Calibration and deployment "
             "are not silently conditioned on different start sets."
         )
     shield.reset_episode()
@@ -866,10 +1261,15 @@ def evaluate(
     active_feasibility_margins: List[float] = []
     active_xi_hat_app: List[float] = []
     active_max_u_psi: List[float] = []
+    active_local_L: List[float] = []
+    active_local_epsilon: List[float] = []
     minimal_projection_failures = 0
     rollout_coverages: List[float] = []
     safety_margins: List[float] = []
+    controller_update_safety_margins: List[float] = []
+    integration_substep_safety_margins: List[float] = []
     total_safety_violations = 0
+    total_intersample_safety_violations = 0
     diagnostic_records: List[Dict[str, Any]] = []
     printed_diagnostics = 0
     representative_trajectory: Dict[str, Any] = {
@@ -895,7 +1295,10 @@ def evaluate(
             action, agent = agent.eval_actions(obs)
             residual = np.asarray(action, dtype=np.float32).reshape(2)
             reference = _reference_warmup_action(
-                state_before, shield.variant.model.beta_u
+                state_before, shield.variant.model.beta_u, shield.goal,
+                (shield.args.reference_waypoint_x,shield.args.reference_waypoint_y),
+                shield.args.reference_orbit_trigger_radius,
+                shield.args.reference_orbit_radius, shield.args.reference_orbit_gain,
             )
             u_nom = np.clip(
                 reference + shield.residual_reference_scale * residual,
@@ -931,6 +1334,8 @@ def evaluate(
                     )
                     active_xi_hat_app.append(float(diag["xi_hat_app"]))
                     active_max_u_psi.append(float(diag["max_u_psi"]))
+                    active_local_L.append(float(diag["L_Psi_j"]))
+                    active_local_epsilon.append(float(diag["epsilon_inter"]))
                     ep_rail_fallback += float(
                         bool(diag["fallback_is_actuator_rail"])
                     )
@@ -954,7 +1359,12 @@ def evaluate(
                             "filtered_action": [float(value) for value in u_applied],
                             "feasible": bool(not diag["infeasible"]),
                             "xi_hat_app": float(diag["xi_hat_app"]),
+                            "C_x": float(diag["C_x"]),
+                            "L_Psi_j": float(diag["L_Psi_j"]),
                             "epsilon_inter": float(diag["epsilon_inter"]),
+                            "total_qp_tightening": float(
+                                diag["total_qp_tightening"]
+                            ),
                             "requested_xi": float(diag["requested_xi"]),
                             "max_u_psi": float(diag["max_u_psi"]),
                             "feasibility_margin": float(
@@ -1019,16 +1429,16 @@ def evaluate(
                     shield.cbvf,
                     shield.qp_env,
                 )
-                next_rho = shield.cs.mismatch_sensitivity(
-                    next_state, float(shield.tau[ep_len + 1]), shield.cbvf
-                )
                 q_next, _ = shield.mondrian_calibration.applied_buffer(
                     state=next_state,
-                    travel_radius=shield.speed_envelope * shield.dt,
+                    travel_radius=(
+                        shield.C_x if shield.intersample_protection
+                        else shield.speed_envelope
+                    ) * shield.dt,
                 )
                 ep_covered = bool(
                     ep_covered
-                    and eta_next <= float(q_next) * float(next_rho) + 1e-10
+                    and eta_next <= float(q_next) + 1e-10
                 )
             done = bool(terminated or truncated)
             ep_return += float(reward)
@@ -1036,7 +1446,16 @@ def evaluate(
             ep_goal = ep_goal or bool(info.get("reach_goal", False))
             ep_unsafe = ep_unsafe or bool(info.get("unsafe", False))
             safety_margins.append(float(info.get("safe_margin", float("nan"))))
+            controller_update_safety_margins.append(
+                float(info.get("controller_update_safe_margin", float("nan")))
+            )
+            integration_substep_safety_margins.append(
+                float(info.get("minimum_substep_safe_margin", float("nan")))
+            )
             total_safety_violations += int(bool(info.get("unsafe", False)))
+            total_intersample_safety_violations += int(
+                bool(info.get("intersample_unsafe", False))
+            )
             ep_len += 1
         returns.append(ep_return)
         costs.append(ep_cost)
@@ -1069,6 +1488,15 @@ def evaluate(
         ),
         "total_safety_violations": float(total_safety_violations),
         "minimum_safety_margin": float(np.nanmin(safety_margins)),
+        "minimum_controller_update_safety_margin": float(
+            np.nanmin(controller_update_safety_margins)
+        ),
+        "minimum_integration_substep_safety_margin": float(
+            np.nanmin(integration_substep_safety_margins)
+        ),
+        "total_intersample_safety_violations": float(
+            total_intersample_safety_violations
+        ),
         "active_filter_steps": float(np.mean(active_steps)),
         "infeasible_steps": float(np.mean(infeasible_steps)),
         "active_filter_total": total_active,
@@ -1096,7 +1524,12 @@ def evaluate(
         "mean_active_xi_hat_app": (
             float(np.mean(active_xi_hat_app)) if active_xi_hat_app else 0.0
         ),
-        "epsilon_inter": float(shield.epsilon_inter if method == "cp" else 0.0),
+        "C_x": float(shield.C_x),
+        "L_Psi_min": float(np.min(active_local_L)) if active_local_L else 0.0,
+        "L_Psi_max": float(np.max(active_local_L)) if active_local_L else 0.0,
+        "epsilon_inter_min": float(np.min(active_local_epsilon)) if active_local_epsilon else 0.0,
+        "epsilon_inter_max": float(np.max(active_local_epsilon)) if active_local_epsilon else 0.0,
+        "epsilon_inter": float(np.max(active_local_epsilon)) if active_local_epsilon else 0.0,
         "mean_active_max_u_psi": (
             float(np.mean(active_max_u_psi)) if active_max_u_psi else 0.0
         ),
@@ -1337,7 +1770,18 @@ def main() -> None:
     parser.add_argument("--speed-min", type=float, default=0.0)
     parser.add_argument("--beta-u", type=float, default=0.50)
     parser.add_argument("--dt", type=float, default=0.05)
+    parser.add_argument(
+        "--integration-substeps", type=int, default=1,
+        help="RK4 substeps and safety checks per zero-order-held control interval.",
+    )
     parser.add_argument("--horizon", type=int, default=400)
+    parser.add_argument("--reference-waypoint-x", type=float, default=-0.65)
+    parser.add_argument("--reference-waypoint-y", type=float, default=0.65)
+    parser.add_argument("--reference-orbit-trigger-radius", type=float, default=0.0)
+    parser.add_argument("--reference-orbit-radius", type=float, default=1.0)
+    parser.add_argument("--reference-orbit-gain", type=float, default=2.0)
+    parser.add_argument("--goal-x", type=float, default=2.0)
+    parser.add_argument("--goal-y", type=float, default=2.0)
     parser.add_argument("--initial-x", type=float, default=-2.0)
     parser.add_argument("--initial-y", type=float, default=-2.0)
     parser.add_argument("--initial-theta", type=float, default=math.pi / 4.0)
@@ -1378,8 +1822,30 @@ def main() -> None:
         help="Action filter used during RL data collection; each setting trains an independent actor.",
     )
     parser.add_argument("--gamma", type=float, default=0.10)
+    parser.add_argument("--shield-release-margin", type=float, default=0.0)
+    parser.add_argument(
+        "--certified-initial-B-floor", type=float, default=0.0,
+        help=("Initial CBVF superlevel defining the recursively certified domain; "
+              "its time-j floor is B0*exp(-gamma*(t_j-t0))."),
+    )
+    parser.add_argument(
+        "--auto-certified-initial-B-floor", action="store_true",
+        help=("Replace the supplied floor by the exact multilinear minimum over "
+              "the complete continuous reset box and verify the box is initially active."),
+    )
     parser.add_argument("--delta-traj", "--delta", dest="delta_traj", type=float, default=0.05)
     parser.add_argument("--n-calib", type=int, default=500)
+    parser.add_argument("--calibration-manifest-in", type=str, default=None)
+    parser.add_argument(
+        "--reuse-zero-offline-audit", action="store_true",
+        help=("Reuse the zero-infeasibility audit embedded in the loaded frozen "
+              "calibration manifest after strict compatibility checks."),
+    )
+    parser.add_argument(
+        "--audit-dominating-manifest-in", type=str, default=None,
+        help=("For a fresh calibration, reuse this zero audit only when its "
+              "regional buffers dominate the new buffers componentwise."),
+    )
     parser.add_argument(
         "--mondrian-clearance-edges",
         type=str,
@@ -1387,6 +1853,13 @@ def main() -> None:
     )
     parser.add_argument("--epsilon-grid", type=float, default=0.0)
     parser.add_argument("--epsilon-inter", type=float, default=0.0)
+    parser.add_argument(
+        "--intersample-protection", action="store_true",
+        help=(
+            "Enable the paper's reachable-region and L_Psi,j inter-sample "
+            "tightening using physical bounds rather than a fixed margin."
+        ),
+    )
     parser.add_argument(
         "--allow-infeasible-cp-diagnostic-run",
         action="store_true",
@@ -1442,9 +1915,14 @@ def main() -> None:
     parser.add_argument("--cache-dir", type=str, default="cbvf_cache")
     parser.add_argument(
         "--recompute-cbvf",
+        dest="recompute_cbvf",
         action="store_true",
         default=True,
-        help="Accepted for explicit commands; fresh recomputation is mandatory and cannot be disabled.",
+        help="Recompute and freeze a new CBVF table before calibration.",
+    )
+    parser.add_argument(
+        "--reuse-cbvf", dest="recompute_cbvf", action="store_false",
+        help="Reuse the immutable cached CBVF used by a frozen calibration or reachability audit.",
     )
     parser.add_argument("--cbvf-nx", type=int, default=81)
     parser.add_argument("--cbvf-ny", type=int, default=81)
@@ -1496,10 +1974,18 @@ def main() -> None:
     parser.add_argument("--keep-if-nominal-unsafe-below", type=float, default=0.20)
     parser.add_argument("--keep-if-goal-above", type=float, default=0.75)
     parser.add_argument("--no-tqdm", action="store_true")
+    parser.add_argument(
+        "--feasibility-only", action="store_true",
+        help="Stop after calibration and the strict offline QP gate; never train or evaluate.",
+    )
     args = parser.parse_args()
 
     if args.max_steps < 1:
         parser.error("--max-steps must be positive.")
+    if args.certified_initial_B_floor < 0.0:
+        parser.error("--certified-initial-B-floor must be nonnegative.")
+    if args.shield_release_margin < 0.0:
+        parser.error("--shield-release-margin must be nonnegative.")
     if not 1 <= args.start_training <= args.max_steps:
         parser.error("--start-training must be between 1 and --max-steps.")
     if not args.start_training <= args.reference_proposal_steps <= args.max_steps:
@@ -1518,6 +2004,10 @@ def main() -> None:
         parser.error("--delta-traj must lie strictly between zero and one.")
     if args.epsilon_grid < 0.0 or args.epsilon_inter < 0.0:
         parser.error("--epsilon-grid and --epsilon-inter must be nonnegative.")
+    if args.integration_substeps < 1:
+        parser.error("--integration-substeps must be at least one.")
+    if args.intersample_protection and args.integration_substeps < 2:
+        parser.error("--intersample-protection requires at least two integration substeps.")
     if args.cbvf_terminal_guard < 0.0:
         parser.error("--cbvf-terminal-guard must be nonnegative.")
     if args.qp_diagnostic_episodes < 0 or args.qp_diagnostic_print_limit < 0:
@@ -1596,7 +2086,9 @@ def main() -> None:
         speed_min=args.speed_min,
         beta_u=args.beta_u,
         dt=args.dt,
+        integration_substeps=args.integration_substeps,
         horizon=args.horizon,
+        goal=(args.goal_x, args.goal_y),
         initial_state=(args.initial_x, args.initial_y, args.initial_theta),
         random_start=True,
         start_jitter_xy=args.start_jitter_xy,
@@ -1633,7 +2125,7 @@ def main() -> None:
     print("Rebuilding CBVF, then calibrating Mondrian buffers before episode one.")
 
     train_shield = TrainingShield(args, env, agent_for_calibration=agent)
-    if not train_shield.cbvf_recomputed:
+    if args.recompute_cbvf and not train_shield.cbvf_recomputed:
         raise RuntimeError("Training cannot start without fresh CBVF recomputation.")
     if train_shield.mondrian_calibration is None:
         raise RuntimeError("Training cannot start without Mondrian calibration.")
@@ -1671,6 +2163,9 @@ def main() -> None:
             "rollout design before making a Mondrian-activity claim. Use "
             "--allow-single-effective-region only for an explicitly labeled smoke test."
         )
+    if args.feasibility_only:
+        print("Feasibility-only design run complete; no RL or final evaluation data were generated.")
+        return
 
     policy_config = {
         "seed": int(args.seed),
@@ -1766,14 +2261,20 @@ def main() -> None:
             if step <= args.reference_proposal_steps and args.warmup_policy == "reference":
                 policy_action = np.zeros(2, dtype=np.float32)
                 u_nom = _reference_warmup_action(
-                    state_before, args.cbvf_model_beta_u
+                    state_before, args.cbvf_model_beta_u, train_shield.goal,
+                    (args.reference_waypoint_x,args.reference_waypoint_y),
+                    args.reference_orbit_trigger_radius,
+                    args.reference_orbit_radius, args.reference_orbit_gain,
                 )
             else:
                 action, agent = agent.sample_actions(obs)
                 residual = np.asarray(action, dtype=np.float32).reshape(2)
                 policy_action = residual
                 reference = _reference_warmup_action(
-                    state_before, args.cbvf_model_beta_u
+                    state_before, args.cbvf_model_beta_u, train_shield.goal,
+                    (args.reference_waypoint_x,args.reference_waypoint_y),
+                    args.reference_orbit_trigger_radius,
+                    args.reference_orbit_radius, args.reference_orbit_gain,
                 )
                 u_nom = np.clip(
                     reference + args.residual_reference_scale * residual,
@@ -1877,7 +2378,12 @@ def main() -> None:
                 "regional_buffer": float(shield_diag["regional_buffer"]),
                 "qp_rhs": float(shield_diag["qp_rhs"]),
                 "xi_hat_app": float(shield_diag["xi_hat_app"]),
+                "C_x": float(shield_diag["C_x"]),
+                "L_Psi_j": float(shield_diag["L_Psi_j"]),
                 "epsilon_inter": float(shield_diag["epsilon_inter"]),
+                "total_qp_tightening": float(
+                    shield_diag["total_qp_tightening"]
+                ),
                 "requested_xi": float(shield_diag["requested_xi"]),
                 "max_u_psi": shield_diag["max_u_psi"],
                 "feasibility_margin": shield_diag["feasibility_margin"],
@@ -1905,6 +2411,16 @@ def main() -> None:
                 "nominal_counterfactual_cost": float(nominal_counterfactual_cost),
                 "nominal_counterfactual_safe_margin": float(
                     nominal_cost_info["safe_margin"]
+                ),
+                "controller_update_safe_margin": float(
+                    info["controller_update_safe_margin"]
+                ),
+                "minimum_integration_substep_safety_margin": float(
+                    info["minimum_substep_safe_margin"]
+                ),
+                "intersample_unsafe": bool(info["intersample_unsafe"]),
+                "integration_substeps_executed": int(
+                    info["integration_substeps_executed"]
                 ),
                 "terminated": bool(terminated),
                 "truncated": bool(truncated),
@@ -2053,16 +2569,23 @@ def main() -> None:
     # calibration on data collected by exactly that deployed policy. No policy
     # update occurs after this point; final evaluation uses disjoint seeds.
     args.post_training_recalibration = True
+    if args.calibration_manifest_in:
+        # The pre-training design calibration must not be mistaken for the
+        # independent calibration of the frozen learned policy.  Its zero audit
+        # can still certify the new filter by monotonicity, but only after the
+        # componentwise buffer-dominance checks in TrainingShield.
+        args.audit_dominating_manifest_in = args.calibration_manifest_in
+        args.calibration_manifest_in = None
     final_shield = TrainingShield(args, env, agent)
-    if final_shield.offline_feasibility_audit["n_infeasible_grid_nodes"] != 0:
-        raise RuntimeError(
-            "Post-training calibrated QP failed the exhaustive offline feasibility gate."
-        )
     calibration_manifest = ckpt_dir / "final_frozen_policy_mondrian_calibration.json"
     shield_metadata = final_shield.metadata()
     shield_metadata["calibration_phase"] = "post_training_frozen_residual_policy"
     shield_metadata["no_policy_updates_after_calibration"] = True
     _write_json(calibration_manifest, shield_metadata)
+    if final_shield.offline_feasibility_audit["n_infeasible_grid_nodes"] != 0:
+        raise RuntimeError(
+            "Post-training calibrated QP failed the exhaustive offline feasibility gate; the failed audit was saved."
+        )
     policy_config["shield"] = shield_metadata
     policy_config["training_workflow"]["post_training_recalibration"] = True
     policy_config["training_workflow"]["training_rollout_coverage_claim"] = "none"

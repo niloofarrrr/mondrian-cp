@@ -58,6 +58,7 @@ class ConformalDubinsConfig:
     u_min: float = -1.0
     u_max: float = 1.0
     dt: float = 0.05
+    integration_substeps: int = 1
     horizon: int = 400
     initial_state: Tuple[float, float, float] = (-2.0, -2.0, math.pi / 4.0)
     random_start: bool = True
@@ -102,7 +103,9 @@ class ConformalDubins3dEnv(gym.Env):
         speed_min: float = 0.0,
         beta_u: float = 0.50,
         dt: float = 0.05,
+        integration_substeps: int = 1,
         horizon: int = 400,
+        goal: Tuple[float, float] = (2.0, 2.0),
         initial_state: Tuple[float, float, float] = (-2.0, -2.0, math.pi / 4.0),
         random_start: bool = True,
         start_jitter_xy: float = 0.60,
@@ -121,12 +124,17 @@ class ConformalDubins3dEnv(gym.Env):
         initial_state_tuple = tuple(float(value) for value in initial_state)
         if len(initial_state_tuple) != 3 or not np.isfinite(initial_state_tuple).all():
             raise ValueError("initial_state must contain three finite values.")
+        goal_tuple = tuple(float(value) for value in goal)
+        if len(goal_tuple) != 2 or not np.isfinite(goal_tuple).all():
+            raise ValueError("goal must contain two finite values.")
         self.cfg = ConformalDubinsConfig(
             speed=float(speed),
             speed_min=float(speed_min),
             beta_u=float(beta_u),
             dt=float(dt),
+            integration_substeps=int(integration_substeps),
             horizon=int(horizon),
+            goal=goal_tuple,
             initial_state=initial_state_tuple,
             random_start=bool(random_start),
             start_jitter_xy=float(start_jitter_xy),
@@ -143,6 +151,8 @@ class ConformalDubins3dEnv(gym.Env):
             terminate_on_unsafe=bool(terminate_on_unsafe),
         )
         self.render_mode = render_mode
+        if self.cfg.integration_substeps < 1:
+            raise ValueError("integration_substeps must be at least one.")
         self.state = np.asarray(self.cfg.initial_state, dtype=np.float32)
         self.t = 0
 
@@ -196,12 +206,25 @@ class ConformalDubins3dEnv(gym.Env):
     def step(self, action):
         u = np.clip(np.asarray(action, dtype=np.float32).reshape(2), self.cfg.u_min, self.cfg.u_max)
         speed, yaw_rate = self.physical_controls(u)
-        self.state = rk4_step(lambda z: self.dynamics(z, u), self.state, self.cfg.dt)
+        update_margin = self.safety_margin_value(self.state)
+        substep_dt = self.cfg.dt / float(self.cfg.integration_substeps)
+        substep_margins = []
+        intersample_violation = False
+        for _ in range(self.cfg.integration_substeps):
+            self.state = rk4_step(
+                lambda z: self.dynamics(z, u), self.state, substep_dt
+            )
+            substep_margin = self.safety_margin_value(self.state)
+            substep_margins.append(float(substep_margin))
+            if substep_margin < 0.0:
+                intersample_violation = True
+                if self.cfg.terminate_on_unsafe:
+                    break
         self.t += 1
 
         dist_to_goal = self.goal_distance(self.state)
         margin = self.safety_margin_value(self.state)
-        unsafe = margin < 0.0
+        unsafe = bool(intersample_violation or margin < 0.0)
         goal = self.goal_reached(self.state)
         out_of_bounds = not (self.cfg.xmin <= self.state[0] <= self.cfg.xmax and self.cfg.ymin <= self.state[1] <= self.cfg.ymax)
 
@@ -231,6 +254,10 @@ class ConformalDubins3dEnv(gym.Env):
             "unsafe": bool(unsafe),
             "reach_goal": bool(goal),
             "safe_margin": float(margin),
+            "controller_update_safe_margin": float(update_margin),
+            "minimum_substep_safe_margin": float(min(substep_margins)),
+            "integration_substeps_executed": int(len(substep_margins)),
+            "intersample_unsafe": bool(intersample_violation),
             "goal_distance": float(dist_to_goal),
             "applied_action": [float(value) for value in u],
             "applied_speed": float(speed),

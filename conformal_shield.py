@@ -186,6 +186,7 @@ class ShieldConfig:
 
     cbvf_activate_margin: float
     cp_activate_margin: float
+    release_margin: float = 0.05
 
     def activation_threshold(self, method: str, xi_hat: float) -> float:
         _ = xi_hat  # xi_hat tightens the QP RHS only; it does not shift wake-up.
@@ -206,6 +207,7 @@ class ShieldConfig:
         return {
             "cbvf_activate_margin": float(self.cbvf_activate_margin),
             "cp_activate_margin": float(self.cp_activate_margin),
+            "release_margin": float(self.release_margin),
             "cbvf_activation_threshold": float(self.activation_threshold("cbvf", xi_hat)),
             "cp_activation_threshold": float(self.activation_threshold("cp", xi_hat)),
             "cbvf_qp_rhs": float(self.qp_rhs("cbvf", xi_hat)),
@@ -509,7 +511,7 @@ class DubinsCBVFEnv:
 
     @staticmethod
     def _physical_controls(spec: DynamicsSpec, u: np.ndarray) -> Tuple[float, float]:
-        u = np.clip(np.asarray(u, dtype=float).reshape(2), -1.0, 1.0)
+        u = np.minimum(np.maximum(np.asarray(u, dtype=float).reshape(2), -1.0), 1.0)
         speed = spec.v_min + 0.5 * (u[0] + 1.0) * (spec.v - spec.v_min)
         return float(speed), float(spec.beta_u * u[1])
 
@@ -534,7 +536,7 @@ class DubinsCBVFEnv:
     ) -> Tuple[np.ndarray, bool, Dict[str, float]]:
         if self.state is None:
             raise RuntimeError("State has not been initialised.")
-        u = np.clip(np.asarray(u, dtype=float).reshape(2), self.control_bounds.lo, self.control_bounds.hi)
+        u = np.minimum(np.maximum(np.asarray(u, dtype=float).reshape(2), self.control_bounds.lo), self.control_bounds.hi)
         self.state = rk4_step(lambda z: self.true_dynamics(z, u), self.state, self.dt)
         self.t += 1
         unsafe = not self.is_safe_state(self.state)
@@ -629,8 +631,18 @@ class CBVFTable:
         self.x_grid = np.asarray(x_grid, dtype=float)
         self.y_grid = np.asarray(y_grid, dtype=float)
         self.th_grid = np.asarray(th_grid, dtype=float)
+        self._heading_mean_spacing = float(np.mean(np.diff(self.th_grid)))
         self.tau = np.asarray(tau, dtype=float)      # tau[0]=t0<0, tau[-1]=0
         self.B_table = np.asarray(B_table, dtype=float)
+        # Legacy runs use nearest-time lookup.  The inter-sample implementation
+        # explicitly enables continuous interpolation so that Psi admits a
+        # finite state--time Lipschitz envelope as assumed in the paper.
+        self.continuous_time_interpolation = False
+        self._periodic_heading_gradient_enabled = False
+        self._local_psi_certificate_cache: Dict[
+            Tuple[object, ...], Dict[str, object]
+        ] = {}
+        self._local_eta_certificate_cache: Dict[Tuple[object, ...], Dict[str, float]] = {}
 
         expected_shape = (
             len(self.x_grid),
@@ -691,6 +703,13 @@ class CBVFTable:
             self.gy[..., k] = gy_k
             self.gth[..., k] = gth_k
 
+        if len(self.tau) >= 2:
+            self.gt = np.gradient(
+                self.B_table, self.tau, axis=3, edge_order=2
+            )
+        else:
+            self.gt = np.zeros_like(self.B_table)
+
     def convergence_stats(self, n_tail_slices: int = 5) -> Dict[str, float]:
         """Diagnostics for whether the finite-horizon table has approximately converged at t0."""
         if len(self.tau) == 1:
@@ -745,7 +764,7 @@ class CBVFTable:
 
     @staticmethod
     def _cell_and_weight(grid: np.ndarray, value: float) -> Tuple[int, float]:
-        value = float(np.clip(value, grid[0], grid[-1]))
+        value = min(max(float(value), float(grid[0])), float(grid[-1]))
         j = int(np.searchsorted(grid, value, side="right") - 1)
         j = max(0, min(j, len(grid) - 2))
         g0, g1 = grid[j], grid[j + 1]
@@ -755,20 +774,57 @@ class CBVFTable:
     def _nearest_time_index(self, t: float) -> int:
         return int(np.argmin(np.abs(self.tau - t)))
 
+    def enable_continuous_time_interpolation(self, enabled: bool = True) -> None:
+        self.continuous_time_interpolation = bool(enabled)
+        if enabled and not self._periodic_heading_gradient_enabled:
+            if len(self.th_grid) < 4:
+                raise RuntimeError("Periodic heading interpolation needs at least four grid nodes.")
+            spacing = np.diff(self.th_grid)
+            if not np.allclose(spacing, np.mean(spacing), rtol=1e-5, atol=1e-7):
+                raise RuntimeError("Periodic heading-gradient construction requires a uniform grid.")
+            conservative_dtheta = float(np.min(spacing))
+            periodic_gradient = (
+                np.roll(self.B_table, -1, axis=2)
+                - np.roll(self.B_table, 1, axis=2)
+            ) / (2.0 * conservative_dtheta)
+            self.gth[...] = periodic_gradient
+            self._periodic_heading_gradient_enabled = True
+
+    def _time_cell_and_weight(self, t: float) -> Tuple[int, float]:
+        if len(self.tau) < 2:
+            return 0, 0.0
+        return self._cell_and_weight(self.tau, float(t))
+
+    def _interp_space_time(self, field4: np.ndarray, s: np.ndarray, t: float) -> float:
+        if len(self.tau) == 1:
+            return self._interp3(field4[..., 0], s)
+        k, wt = self._time_cell_and_weight(t)
+        left = self._interp3(field4[..., k], s)
+        right = self._interp3(field4[..., k + 1], s)
+        return float((1.0 - wt) * left + wt * right)
+
     def _interp3(self, field3: np.ndarray, s: np.ndarray) -> float:
         x, y, th = float(s[0]), float(s[1]), wrap_angle(float(s[2]))
         ix, wx = self._cell_and_weight(self.x_grid, x)
         iy, wy = self._cell_and_weight(self.y_grid, y)
-        it, wt = self._cell_and_weight(self.th_grid, th)
+        if self.continuous_time_interpolation:
+            dth = self._heading_mean_spacing
+            phase = (th - float(self.th_grid[0])) / dth
+            it = int(math.floor(phase)) % len(self.th_grid)
+            it_next = (it + 1) % len(self.th_grid)
+            wt = float(phase - math.floor(phase))
+        else:
+            it, wt = self._cell_and_weight(self.th_grid, th)
+            it_next = it + 1
 
         c000 = field3[ix,     iy,     it    ]
-        c001 = field3[ix,     iy,     it + 1]
+        c001 = field3[ix,     iy,     it_next]
         c010 = field3[ix,     iy + 1, it    ]
-        c011 = field3[ix,     iy + 1, it + 1]
+        c011 = field3[ix,     iy + 1, it_next]
         c100 = field3[ix + 1, iy,     it    ]
-        c101 = field3[ix + 1, iy,     it + 1]
+        c101 = field3[ix + 1, iy,     it_next]
         c110 = field3[ix + 1, iy + 1, it    ]
-        c111 = field3[ix + 1, iy + 1, it + 1]
+        c111 = field3[ix + 1, iy + 1, it_next]
 
         c00 = (1.0 - wx) * c000 + wx * c100
         c01 = (1.0 - wx) * c001 + wx * c101
@@ -805,6 +861,31 @@ class CBVFTable:
             )
             return B, grad, 0.0
 
+        if self.continuous_time_interpolation:
+            # All five fields use exactly the same interpolation stencil.
+            # Locate it once rather than repeating ten spatial searches.
+            ix, wx = self._cell_and_weight(self.x_grid, float(s[0]))
+            iy, wy = self._cell_and_weight(self.y_grid, float(s[1]))
+            phase = (wrap_angle(float(s[2])) - float(self.th_grid[0])) / self._heading_mean_spacing
+            floor_phase = math.floor(phase)
+            ih = int(floor_phase) % len(self.th_grid)
+            jh = (ih + 1) % len(self.th_grid)
+            wh = float(phase - floor_phase)
+            kt, wt = self._time_cell_and_weight(t)
+            values = []
+            for field in (self.B_table, self.gx, self.gy, self.gth, self.gt):
+                time_values = []
+                for k in (kt, kt + 1):
+                    c00 = (1-wx)*field[ix,iy,ih,k] + wx*field[ix+1,iy,ih,k]
+                    c01 = (1-wx)*field[ix,iy,jh,k] + wx*field[ix+1,iy,jh,k]
+                    c10 = (1-wx)*field[ix,iy+1,ih,k] + wx*field[ix+1,iy+1,ih,k]
+                    c11 = (1-wx)*field[ix,iy+1,jh,k] + wx*field[ix+1,iy+1,jh,k]
+                    c0 = (1-wy)*c00 + wy*c10
+                    c1 = (1-wy)*c01 + wy*c11
+                    time_values.append(float((1-wh)*c0 + wh*c1))
+                values.append(float((1-wt)*time_values[0] + wt*time_values[1]))
+            return values[0], np.asarray(values[1:4]), values[4]
+
         k = self._nearest_time_index(t)
         B = self._interp3(self.B_table[..., k], s)
         grad = np.array(
@@ -827,6 +908,444 @@ class CBVFTable:
             DtB = (B - B_bwd) / self.dt
 
         return B, grad, float(DtB)
+
+    @staticmethod
+    def _axis_slope_bound(field: np.ndarray, grid: np.ndarray, axis: int) -> float:
+        spacing = np.diff(np.asarray(grid, dtype=float))
+        shape = [1] * field.ndim
+        shape[axis] = len(spacing)
+        slopes = np.diff(field, axis=axis) / spacing.reshape(shape)
+        return float(np.max(np.abs(slopes))) if slopes.size else 0.0
+
+    @staticmethod
+    def _periodic_axis_slope_bound(
+        field: np.ndarray, grid: np.ndarray, axis: int
+    ) -> float:
+        spacing = np.diff(np.asarray(grid, dtype=float))
+        if not np.allclose(spacing, np.mean(spacing), rtol=1e-5, atol=1e-7):
+            raise RuntimeError("Periodic slope bounds require a uniform grid.")
+        slopes = (
+            np.roll(field, -1, axis=axis) - field
+        ) / float(np.min(spacing))
+        return float(np.max(np.abs(slopes))) if slopes.size else 0.0
+
+    def _field_at_time(self, field4: np.ndarray, t: float) -> np.ndarray:
+        if len(self.tau) == 1:
+            return np.asarray(field4[..., 0], dtype=float)
+        k, wt = self._time_cell_and_weight(t)
+        return np.asarray(
+            (1.0 - wt) * field4[..., k] + wt * field4[..., k + 1],
+            dtype=float,
+        )
+
+    def certified_global_psi_lipschitz(
+        self,
+        deployment_tau: np.ndarray,
+        model_spec: DynamicsSpec,
+        gamma: float,
+    ) -> Dict[str, object]:
+        """Conservative L_Psi,j for the numerical CBVF interpolant.
+
+        The paper requires a bound uniform in u.  This routine uses the full
+        stored operating grid, the physical model bounds, exact derivatives
+        of the piecewise-linear state/time interpolants, and interval triangle
+        inequalities for the heading trigonometric factors.  No rollout data
+        enter the bound.
+        """
+        times = np.asarray(deployment_tau, dtype=float)
+        if len(times) < 2:
+            raise ValueError("deployment_tau must contain at least two times.")
+        vmax = max(abs(float(model_spec.v_min)), abs(float(model_spec.v)))
+        omega_max = abs(float(model_spec.beta_u))
+        fields = {
+            "B": self.B_table,
+            "Bt": self.gt,
+            "Bx": self.gx,
+            "By": self.gy,
+            "Bth": self.gth,
+        }
+
+        def bounds_at(t: float) -> Dict[str, object]:
+            arrays = {name: self._field_at_time(value, t) for name, value in fields.items()}
+            spatial = {
+                name: (
+                    self._axis_slope_bound(value, self.x_grid, 0),
+                    self._axis_slope_bound(value, self.y_grid, 1),
+                    self._periodic_axis_slope_bound(value, self.th_grid, 2),
+                )
+                for name, value in arrays.items()
+            }
+            maxima = {name: float(np.max(np.abs(value))) for name, value in arrays.items()}
+            if len(self.tau) == 1:
+                temporal = {name: 0.0 for name in fields}
+            else:
+                k, _ = self._time_cell_and_weight(t)
+                table_dt = float(self.tau[k + 1] - self.tau[k])
+                temporal = {
+                    name: float(np.max(np.abs(value[..., k + 1] - value[..., k]))) / table_dt
+                    for name, value in fields.items()
+                }
+            return {"spatial": spatial, "maxima": maxima, "temporal": temporal}
+
+        cache: Dict[float, Dict[str, object]] = {}
+        def get(t: float) -> Dict[str, object]:
+            key = float(t)
+            if key not in cache:
+                cache[key] = bounds_at(key)
+            return cache[key]
+
+        rows = []
+        for j in range(len(times) - 1):
+            endpoints = (get(times[j]), get(times[j + 1]))
+            component_bounds = []
+            for endpoint in endpoints:
+                s = endpoint["spatial"]
+                m = endpoint["maxima"]
+                qx = (
+                    s["Bt"][0] + float(gamma) * s["B"][0]
+                    + vmax * (s["Bx"][0] + s["By"][0])
+                    + omega_max * s["Bth"][0]
+                )
+                qy = (
+                    s["Bt"][1] + float(gamma) * s["B"][1]
+                    + vmax * (s["Bx"][1] + s["By"][1])
+                    + omega_max * s["Bth"][1]
+                )
+                qth = (
+                    s["Bt"][2] + float(gamma) * s["B"][2]
+                    + vmax * (
+                        s["Bx"][2] + s["By"][2]
+                        + m["Bx"] + m["By"]
+                    )
+                    + omega_max * s["Bth"][2]
+                )
+                temporal = endpoint["temporal"]
+                qt = (
+                    temporal["Bt"] + float(gamma) * temporal["B"]
+                    + vmax * (temporal["Bx"] + temporal["By"])
+                    + omega_max * temporal["Bth"]
+                )
+                component_bounds.append((float(qx), float(qy), float(qth), float(qt)))
+            dx = max(row[0] for row in component_bounds)
+            dy = max(row[1] for row in component_bounds)
+            dth = max(row[2] for row in component_bounds)
+            dt_bound = max(row[3] for row in component_bounds)
+            state_bound = float(math.sqrt(dx * dx + dy * dy + dth * dth))
+            rows.append({
+                "interval": int(j),
+                "t_start": float(times[j]),
+                "t_end": float(times[j + 1]),
+                "state_lipschitz_bound": state_bound,
+                "time_lipschitz_bound": float(dt_bound),
+                "L_Psi_j": float(max(state_bound, dt_bound)),
+                "component_bounds": {
+                    "x": float(dx), "y": float(dy),
+                    "theta": float(dth), "time": float(dt_bound),
+                },
+            })
+        return {
+            "method": "global_piecewise_linear_interpolant_interval_bound",
+            "uniform_over_normalized_control_box": True,
+            "uses_rollout_data": False,
+            "model_v_abs_max": float(vmax),
+            "model_omega_abs_max": float(omega_max),
+            "intervals": rows,
+        }
+
+    @staticmethod
+    def _tube_axis_cells(grid: np.ndarray, center: float, radius: float) -> np.ndarray:
+        """All closed interpolation cells intersecting a clamped axis interval."""
+        lo=max(float(grid[0]),min(float(grid[-1]),float(center)-float(radius)))
+        hi=max(float(grid[0]),min(float(grid[-1]),float(center)+float(radius)))
+        first=max(0,min(len(grid)-2,int(np.searchsorted(grid,lo,side="left"))-1))
+        last=max(0,min(len(grid)-2,int(np.searchsorted(grid,hi,side="right"))-1))
+        return np.arange(first,last+1,dtype=int)
+
+    def certified_local_psi_lipschitz(
+        self,
+        state: np.ndarray,
+        t_start: float,
+        t_end: float,
+        position_radius: float,
+        heading_radius: float,
+        model_spec: DynamicsSpec,
+        gamma: float,
+    ) -> Dict[str, object]:
+        """Certified bound for Psi on one unicycle reachable tube.
+
+        The tube is the product set ``||p-p_j||_2 <= position_radius``,
+        ``dist_S1(theta,theta_j) <= heading_radius``, and
+        ``t_start <= t <= t_end``.  We deliberately bound it by the enclosing
+        x/y box when selecting interpolation cells; this is conservative but
+        local.  Every piecewise-multilinear cell intersecting that box is
+        included, including periodic heading cells and every crossed time cell.
+        Bounds are uniform over the complete normalized actuator box.
+        """
+        state = np.asarray(state, dtype=float).reshape(3)
+        if not (t_end > t_start and position_radius >= 0.0 and heading_radius >= 0.0):
+            raise ValueError("Invalid local reachable-tube dimensions.")
+        dx_grid = float(np.max(np.diff(self.x_grid)))
+        dy_grid = float(np.max(np.diff(self.y_grid)))
+        dth_grid = float(np.max(np.diff(self.th_grid)))
+        xmask = np.abs(self.x_grid - state[0]) <= float(position_radius) + dx_grid
+        ymask = np.abs(self.y_grid - state[1]) <= float(position_radius) + dy_grid
+        angular_distance = np.abs(
+            (self.th_grid - wrap_angle(float(state[2])) + np.pi) % (2.0 * np.pi) - np.pi
+        )
+        thmask = angular_distance <= float(heading_radius) + dth_grid
+        xi, yi, hi = np.flatnonzero(xmask), np.flatnonzero(ymask), np.flatnonzero(thmask)
+        if min(len(xi), len(yi), len(hi)) == 0:
+            raise RuntimeError("Reachable tube did not intersect the CBVF grid.")
+
+        # Include all time knots adjacent to an intersected interpolation cell.
+        if len(self.tau) == 1:
+            ti = np.array([0], dtype=int)
+        else:
+            k0, _ = self._time_cell_and_weight(t_start)
+            k1, _ = self._time_cell_and_weight(t_end)
+            ti = np.arange(k0, min(k1 + 2, len(self.tau)), dtype=int)
+        # The certified numerical bound depends on the selected interpolation
+        # vertices/time knots and fixed tube/dynamics parameters, not on the
+        # raw floating-point state within a region that selects those same
+        # vertices.  Cache that exact equivalence class.  Per-call provenance
+        # fields are refreshed below so saved diagnostics still report the
+        # actual queried state and interval.
+        x_cells = self._tube_axis_cells(self.x_grid, state[0], position_radius)
+        y_cells = self._tube_axis_cells(self.y_grid, state[1], position_radius)
+        cache_key = (
+            tuple(x_cells.tolist()), tuple(y_cells.tolist()),
+            tuple(xi.tolist()), tuple(yi.tolist()), tuple(hi.tolist()),
+            tuple(ti.tolist()), float(position_radius), float(heading_radius),
+            float(model_spec.v), float(model_spec.v_min),
+            float(model_spec.beta_u), float(gamma),
+        )
+        cached = self._local_psi_certificate_cache.get(cache_key)
+        if cached is not None:
+            result = dict(cached)
+            result.update({
+                "state": state.tolist(),
+                "t_start": float(t_start),
+                "t_end": float(t_end),
+            })
+            return result
+        fields = {"B": self.B_table, "Bt": self.gt,
+                  "Bx": self.gx, "By": self.gy, "Bth": self.gth}
+        vmax = max(abs(float(model_spec.v_min)), abs(float(model_spec.v)))
+        omega_max = abs(float(model_spec.beta_u))
+
+        def local_abs_max(a: np.ndarray) -> float:
+            return float(np.max(np.abs(a[np.ix_(xi, yi, hi, ti)])))
+
+        def local_slope(a: np.ndarray, axis: int) -> float:
+            if axis == 0:
+                ids = x_cells
+                left = a[np.ix_(ids, yi, hi, ti)]
+                right = a[np.ix_(ids + 1, yi, hi, ti)]
+                sub = (right - left) / np.diff(self.x_grid)[ids, None, None, None]
+            elif axis == 1:
+                ids = y_cells
+                left = a[np.ix_(xi, ids, hi, ti)]
+                right = a[np.ix_(xi, ids + 1, hi, ti)]
+                sub = (right - left) / np.diff(self.y_grid)[None, ids, None, None]
+            else:
+                ids = np.unique(np.r_[hi - 1, hi] % len(self.th_grid))
+                left = a[np.ix_(xi, yi, ids, ti)]
+                right = a[np.ix_(xi, yi, (ids + 1) % len(self.th_grid), ti)]
+                sub = (right - left) / dth_grid
+            return float(np.max(np.abs(sub)))
+
+        spatial = {name: tuple(local_slope(a, axis) for axis in range(3))
+                   for name, a in fields.items()}
+        maxima = {name: local_abs_max(a) for name, a in fields.items()}
+        if len(ti) <= 1:
+            temporal = {name: 0.0 for name in fields}
+        else:
+            temporal = {}
+            for name, a in fields.items():
+                vals = a[np.ix_(xi, yi, hi, ti)]
+                denom = np.diff(self.tau[ti])[None, None, None, :]
+                temporal[name] = float(np.max(np.abs(np.diff(vals, axis=3) / denom)))
+        sx = spatial
+        qx = sx["Bt"][0] + gamma*sx["B"][0] + vmax*(sx["Bx"][0]+sx["By"][0]) + omega_max*sx["Bth"][0]
+        qy = sx["Bt"][1] + gamma*sx["B"][1] + vmax*(sx["Bx"][1]+sx["By"][1]) + omega_max*sx["Bth"][1]
+        qth = sx["Bt"][2] + gamma*sx["B"][2] + vmax*(sx["Bx"][2]+sx["By"][2]+maxima["Bx"]+maxima["By"]) + omega_max*sx["Bth"][2]
+        qt = temporal["Bt"] + gamma*temporal["B"] + vmax*(temporal["Bx"]+temporal["By"]) + omega_max*temporal["Bth"]
+        state_bound = float(math.sqrt(qx*qx + qy*qy + qth*qth))
+        result = {
+            "method": "reachable_tube_local_piecewise_multilinear_bound",
+            "state": state.tolist(), "t_start": float(t_start), "t_end": float(t_end),
+            "position_radius": float(position_radius), "heading_radius": float(heading_radius),
+            "L_Psi_j": float(max(state_bound, qt)),
+            "state_lipschitz_bound": state_bound, "time_lipschitz_bound": float(qt),
+            "component_bounds": {"x": float(qx), "y": float(qy), "theta": float(qth), "time": float(qt)},
+            "uniform_over_normalized_control_box": True,
+            "selected_vertex_counts": {"x": len(xi), "y": len(yi), "theta": len(hi), "time": len(ti)},
+        }
+        # The exhaustive feasibility audit already retains its compact dense
+        # per-time-cell result grids.  This secondary equivalence-class cache
+        # accelerates neighbouring online/audit queries, but must stay bounded:
+        # a full space-time audit can otherwise create millions of Python
+        # dictionary entries and be killed by the OS despite the numerical
+        # arrays themselves being small.
+        if len(self._local_psi_certificate_cache) >= 20_000:
+            self._local_psi_certificate_cache.clear()
+        self._local_psi_certificate_cache[cache_key] = dict(result)
+        return result
+
+    def certified_grid_psi_lipschitz(
+        self, t_start: float, t_end: float, position_radius: float,
+        heading_radius: float, model_spec: DynamicsSpec, gamma: float,
+    ) -> np.ndarray:
+        """Batch the identical local certificate over all stored spatial nodes.
+
+        Cartesian maxima are separable. No nodes, slopes, actuator values, or
+        time knots are dropped; the scalar routine remains the reference.
+        """
+        if not (t_end > t_start and position_radius >= 0 and heading_radius >= 0):
+            raise ValueError("Invalid local reachable-tube dimensions.")
+        grids=(self.x_grid,self.y_grid,self.th_grid)
+        spacings=[float(np.max(np.diff(g))) for g in grids]
+        selections=[]
+        for axis,g in enumerate(grids):
+            if axis<2:
+                selections.append([np.flatnonzero(np.abs(g-x)<=position_radius+spacings[axis]) for x in g])
+            else:
+                selections.append([np.flatnonzero(np.abs((g-wrap_angle(float(x))+np.pi)%(2*np.pi)-np.pi)<=heading_radius+spacings[axis]) for x in g])
+        slope_selections=[]
+        for axis,g in enumerate(grids):
+            slope_selections.append([
+                self._tube_axis_cells(g,g[index],position_radius) if axis<2
+                else np.unique(np.r_[ids-1,ids]%len(g))
+                for index,ids in enumerate(selections[axis])])
+        k0,_=self._time_cell_and_weight(t_start);k1,_=self._time_cell_and_weight(t_end)
+        ti=np.arange(k0,min(k1+2,len(self.tau)),dtype=int) if len(self.tau)>1 else np.array([0])
+        def reduce_cartesian(a, chosen):
+            for axis,groups in enumerate(chosen):
+                a=np.stack([np.max(np.take(a,ids,axis=axis),axis=axis) for ids in groups],axis=axis)
+            return a
+        spatial={};maxima={};temporal={}
+        for name,field in {'B':self.B_table,'Bt':self.gt,'Bx':self.gx,'By':self.gy,'Bth':self.gth}.items():
+            a=field[...,ti]
+            maxima[name]=reduce_cartesian(np.max(np.abs(a),axis=3),selections)
+            slopes=[]
+            for axis,g in enumerate(grids):
+                if axis<2:
+                    shape=[1]*4;shape[axis]=len(g)-1
+                    difference=np.diff(a,axis=axis)/np.diff(g).reshape(shape)
+                else:
+                    difference=(np.roll(a,-1,axis=2)-a)/spacings[2]
+                chosen=list(selections);chosen[axis]=slope_selections[axis]
+                slopes.append(reduce_cartesian(np.max(np.abs(difference),axis=3),chosen))
+            spatial[name]=slopes
+            temporal[name]=(reduce_cartesian(np.max(np.abs(np.diff(a,axis=3)/np.diff(self.tau[ti])[None,None,None,:]),axis=3),selections)
+                            if len(ti)>1 else np.zeros(field.shape[:3]))
+        vmax=max(abs(float(model_spec.v_min)),abs(float(model_spec.v)))
+        omega=abs(float(model_spec.beta_u));s=spatial
+        qx=s['Bt'][0]+gamma*s['B'][0]+vmax*(s['Bx'][0]+s['By'][0])+omega*s['Bth'][0]
+        qy=s['Bt'][1]+gamma*s['B'][1]+vmax*(s['Bx'][1]+s['By'][1])+omega*s['Bth'][1]
+        qh=s['Bt'][2]+gamma*s['B'][2]+vmax*(s['Bx'][2]+s['By'][2]+maxima['Bx']+maxima['By'])+omega*s['Bth'][2]
+        qt=temporal['Bt']+gamma*temporal['B']+vmax*(temporal['Bx']+temporal['By'])+omega*temporal['Bth']
+        return np.maximum(np.sqrt(qx*qx+qy*qy+qh*qh),qt)
+
+    def certified_global_eta_time_lipschitz(
+        self, model_spec: DynamicsSpec, truth_spec: DynamicsSpec
+    ) -> Dict[str, float]:
+        """Uniform time-Lipschitz certificate for the dimensional score eta.
+
+        This is used only for the calibration evaluation-grid margin.  It is
+        analytic for the unicycle mismatch and uniform over both actuator
+        coordinates; no measured or rollout maximum enters the certificate.
+        """
+        model_center = 0.5 * (model_spec.v + model_spec.v_min)
+        model_half = 0.5 * (model_spec.v - model_spec.v_min)
+        truth_center = 0.5 * (truth_spec.v + truth_spec.v_min)
+        truth_half = 0.5 * (truth_spec.v - truth_spec.v_min)
+        delta_v_max = abs(model_center - truth_center) + abs(model_half - truth_half)
+        delta_omega_max = abs(model_spec.beta_u - truth_spec.beta_u)
+        fields = {"Bx": self.gx, "By": self.gy, "Bth": self.gth}
+        spatial = {
+            name: (
+                self._axis_slope_bound(a, self.x_grid, 0),
+                self._axis_slope_bound(a, self.y_grid, 1),
+                self._periodic_axis_slope_bound(a, self.th_grid, 2),
+            ) for name, a in fields.items()
+        }
+        maxima = {name: float(np.max(np.abs(a))) for name, a in fields.items()}
+        if len(self.tau) <= 1:
+            temporal = {name: 0.0 for name in fields}
+        else:
+            temporal = {
+                name: float(np.max(np.abs(np.diff(a, axis=3) /
+                    np.diff(self.tau)[None, None, None, :])))
+                for name, a in fields.items()
+            }
+        qx = delta_v_max*(spatial["Bx"][0]+spatial["By"][0]) + delta_omega_max*spatial["Bth"][0]
+        qy = delta_v_max*(spatial["Bx"][1]+spatial["By"][1]) + delta_omega_max*spatial["Bth"][1]
+        qth = delta_v_max*(spatial["Bx"][2]+spatial["By"][2]+maxima["Bx"]+maxima["By"]) + delta_omega_max*spatial["Bth"][2]
+        qt = delta_v_max*(temporal["Bx"]+temporal["By"]) + delta_omega_max*temporal["Bth"]
+        state_bound = float(math.sqrt(qx*qx + qy*qy + qth*qth))
+        return {
+            "delta_v_abs_max": float(delta_v_max),
+            "delta_omega_abs_max": float(delta_omega_max),
+            "state_lipschitz_bound": state_bound,
+            "time_lipschitz_bound": float(qt),
+            "uses_rollout_data": False,
+        }
+
+    def certified_local_eta_time_lipschitz(
+        self, state: np.ndarray, t_start: float, t_end: float,
+        position_radius: float, heading_radius: float,
+        model_spec: DynamicsSpec, truth_spec: DynamicsSpec,
+    ) -> Dict[str, float]:
+        """Local unicycle mismatch-score bound on an actual reachable tube."""
+        state = np.asarray(state, dtype=float).reshape(3)
+        dxg, dyg, dhg = (float(np.max(np.diff(g))) for g in
+                          (self.x_grid, self.y_grid, self.th_grid))
+        xi = np.flatnonzero(np.abs(self.x_grid-state[0]) <= position_radius+dxg)
+        yi = np.flatnonzero(np.abs(self.y_grid-state[1]) <= position_radius+dyg)
+        ad = np.abs((self.th_grid-wrap_angle(float(state[2]))+np.pi)%(2*np.pi)-np.pi)
+        hi = np.flatnonzero(ad <= heading_radius+dhg)
+        k0, _ = self._time_cell_and_weight(t_start)
+        k1, _ = self._time_cell_and_weight(t_end)
+        ti = np.arange(k0, min(k1+2, len(self.tau)), dtype=int) if len(self.tau)>1 else np.array([0])
+        cache_key = (tuple(xi.tolist()), tuple(yi.tolist()), tuple(hi.tolist()),
+                     tuple(ti.tolist()), float(model_spec.v), float(model_spec.v_min),
+                     float(model_spec.beta_u), float(truth_spec.v),
+                     float(truth_spec.v_min), float(truth_spec.beta_u))
+        cached = self._local_eta_certificate_cache.get(cache_key)
+        if cached is not None:
+            return dict(cached)
+        fields = {"Bx": self.gx, "By": self.gy, "Bth": self.gth}
+        def slope(a: np.ndarray, axis: int) -> float:
+            if axis == 0:
+                ids=np.unique(np.clip(np.r_[xi-1,xi],0,len(self.x_grid)-2)); d=np.diff(self.x_grid)[ids,None,None,None]
+                v=a[np.ix_(ids+1,yi,hi,ti)]-a[np.ix_(ids,yi,hi,ti)]
+            elif axis == 1:
+                ids=np.unique(np.clip(np.r_[yi-1,yi],0,len(self.y_grid)-2)); d=np.diff(self.y_grid)[None,ids,None,None]
+                v=a[np.ix_(xi,ids+1,hi,ti)]-a[np.ix_(xi,ids,hi,ti)]
+            else:
+                ids=np.unique(np.r_[hi-1,hi]%len(self.th_grid)); d=dhg
+                v=a[np.ix_(xi,yi,(ids+1)%len(self.th_grid),ti)]-a[np.ix_(xi,yi,ids,ti)]
+            return float(np.max(np.abs(v/d)))
+        spatial={n:tuple(slope(a,k) for k in range(3)) for n,a in fields.items()}
+        maxima={n:float(np.max(np.abs(a[np.ix_(xi,yi,hi,ti)]))) for n,a in fields.items()}
+        temporal={}
+        for n,a in fields.items():
+            if len(ti)<=1: temporal[n]=0.0
+            else:
+                v=a[np.ix_(xi,yi,hi,ti)]
+                temporal[n]=float(np.max(np.abs(np.diff(v,axis=3)/np.diff(self.tau[ti])[None,None,None,:])))
+        mc,mh=.5*(model_spec.v+model_spec.v_min),.5*(model_spec.v-model_spec.v_min)
+        tc,th=.5*(truth_spec.v+truth_spec.v_min),.5*(truth_spec.v-truth_spec.v_min)
+        dv=abs(mc-tc)+abs(mh-th); dw=abs(model_spec.beta_u-truth_spec.beta_u)
+        qx=dv*(spatial['Bx'][0]+spatial['By'][0])+dw*spatial['Bth'][0]
+        qy=dv*(spatial['Bx'][1]+spatial['By'][1])+dw*spatial['Bth'][1]
+        qh=dv*(spatial['Bx'][2]+spatial['By'][2]+maxima['Bx']+maxima['By'])+dw*spatial['Bth'][2]
+        qt=dv*(temporal['Bx']+temporal['By'])+dw*temporal['Bth']
+        result = {"state_lipschitz_bound":float(math.sqrt(qx*qx+qy*qy+qh*qh)),
+                  "time_lipschitz_bound":float(qt), "uses_rollout_data":False}
+        self._local_eta_certificate_cache[cache_key] = dict(result)
+        return result
 
 
 # ===========================================================================
@@ -944,7 +1463,10 @@ def build_world_target_on_odp_grid(
     else:
         raise ValueError(f"Unsupported target_shape: {target_shape}")
 
-    return np.asarray(bounded, dtype=np.float32)
+    # X and Y are sparse mesh arrays, so the radial expression has a singleton
+    # heading axis.  HeteroCL consumes a dense full-grid buffer and does not
+    # broadcast it: passing the sparse shape permits out-of-bounds reads.
+    return np.broadcast_to(bounded, tuple(grid.pts_each_dim)).astype(np.float32, copy=True)
 
 
 # ===========================================================================
@@ -1155,7 +1677,7 @@ def compute_actual_cbvf_npz(
             compMethod = {
                 "TargetSetMode": "maxCBF",
                 "cbf_gamma": float(attempt["gamma"]),
-                "value_clip_lo": -float(attempt["target_clip"]),
+                "value_clip_lo": -float(max_abs_solver_value),
                 "value_clip_hi": float(attempt["target_clip"]),
                 "max_abs_value": float(max_abs_solver_value),
             }
@@ -1452,7 +1974,7 @@ def solve_cbvf_projection_exact(
     evaluated against the original requested xi; the target is never silently
     clipped. Such events are surfaced as Assumption-5 violations.
     """
-    u_nom = np.clip(np.asarray(u_nom, dtype=float).reshape(2), env.control_bounds.lo, env.control_bounds.hi)
+    u_nom = np.minimum(np.maximum(np.asarray(u_nom, dtype=float).reshape(2), env.control_bounds.lo), env.control_bounds.hi)
     terms = model_constraint_terms(s=s, t=t, cbvf=cbvf, env=env, gamma=gamma)
     a_u = terms.a_u
     base = terms.base_without_control
@@ -1494,7 +2016,7 @@ def solve_cbvf_projection_exact(
         else:
             lo_lam, hi_lam = 0.0, 1.0
             def projected(lam):
-                return np.clip(u_nom + lam * a_u, env.control_bounds.lo, env.control_bounds.hi)
+                return np.minimum(np.maximum(u_nom + lam * a_u, env.control_bounds.lo), env.control_bounds.hi)
             while float(np.dot(a_u, projected(hi_lam))) < required and hi_lam < 1e12:
                 hi_lam *= 2.0
             for _ in range(80):
@@ -1569,6 +2091,8 @@ def trajectory_score(
     cbvf: CBVFTable,
     env: DubinsCBVFEnv,
     partition: Optional[MondrianPartition] = None,
+    dimensional_scores: bool = True,
+    certified_local_grid_margin: bool = False,
 ) -> Tuple[float, Dict[int, float], Dict[str, float]]:
     """
     Evaluate interval-tagged mismatch scores and form regional rollout maxima.
@@ -1596,14 +2120,35 @@ def trajectory_score(
     for step_idx, (s_left, s_right, u, t_left, t_right) in enumerate(
         zip(states, next_states, actions, times, next_times)
     ):
+        interval_grid_margin = 0.0
+        if certified_local_grid_margin:
+            if not dimensional_scores:
+                raise ValueError("Certified local score margins require dimensional eta scores.")
+            vmax_true = max(abs(env.variant.truth.v_min), abs(env.variant.truth.v))
+            omega_true = abs(env.variant.truth.beta_u) * max(abs(env.control_bounds.lo), abs(env.control_bounds.hi))
+            C_x = math.hypot(vmax_true, omega_true)
+            eta_cert = cbvf.certified_local_eta_time_lipschitz(
+                state=s_left, t_start=float(t_left), t_end=float(t_right),
+                position_radius=vmax_true*(float(t_right)-float(t_left)),
+                heading_radius=omega_true*(float(t_right)-float(t_left)),
+                model_spec=env.variant.model, truth_spec=env.variant.truth,
+            )
+            interval_grid_margin = (
+                eta_cert["state_lipschitz_bound"]*C_x
+                + eta_cert["time_lipschitz_bound"]
+            ) * (float(t_right)-float(t_left))
         interval_points = (
             (s_left, float(t_left)),
             (s_right, float(t_right)),
         )
         for state, tagged_time in interval_points:
             eta_now = eta_value(state, u, tagged_time, cbvf, env)
-            rho_now = mismatch_sensitivity(state, tagged_time, cbvf)
-            normalized_eta = float(eta_now / max(rho_now, 1e-12))
+            score_now = (
+                float(eta_now)
+                if dimensional_scores
+                else float(eta_now / max(mismatch_sensitivity(state, tagged_time, cbvf), 1e-12))
+            )
+            score_now += float(interval_grid_margin)
             n_evals += 1
             if eta_now >= max_eta:
                 max_eta = float(eta_now)
@@ -1613,7 +2158,7 @@ def trajectory_score(
                 region = partition.base_region(state)
                 regional_maxima[region] = max(
                     regional_maxima.get(region, -float("inf")),
-                    normalized_eta,
+                    score_now,
                 )
 
     regional_scores = {
@@ -1715,6 +2260,8 @@ def rollout(
     score_partition: Optional[MondrianPartition] = None,
     speed_envelope: float = 0.0,
     epsilon_inter: float = 0.0,
+    dimensional_scores: bool = True,
+    certified_local_grid_margin: bool = False,
 ) -> Dict[str, object]:
     """
     Run one episode. ``tau`` is a strictly increasing deployment-time
@@ -1801,8 +2348,12 @@ def rollout(
                 state=s,
                 travel_radius=float(speed_envelope) * float(env.dt),
             )
-            regional_buffer = float(regional_coefficient) * mismatch_sensitivity(
-                s, t_now, cbvf
+            regional_buffer = (
+                float(regional_coefficient)
+                if dimensional_scores
+                else float(regional_coefficient) * mismatch_sensitivity(
+                    s, t_now, cbvf
+                )
             )
             candidate_effective_region_counts.append(len(active_effective_regions))
 
@@ -1823,7 +2374,7 @@ def rollout(
             # Hysteresis (anti-chattering): once the shield turns on,
             # keep it active until the trajectory has moved a little farther
             # away from the activation boundary.
-            release_buffer = 0.05 if is_shielding else 0.0
+            release_buffer = shield_cfg.release_margin if is_shielding else 0.0
             current_threshold = activation_threshold + release_buffer
 
             shield_active = bool(B_pre <= current_threshold)
@@ -1894,6 +2445,8 @@ def rollout(
         cbvf=cbvf,
         env=env,
         partition=score_partition,
+        dimensional_scores=dimensional_scores,
+        certified_local_grid_margin=certified_local_grid_margin,
     )
     max_eta_online = max(max_eta_online, max_eta)
     effective_regional_scores: Dict[int, float] = {}
@@ -2308,6 +2861,7 @@ def collect_calibration_scores(
     continue_after_unsafe: bool = True,
     partition: Optional[MondrianPartition] = None,
     epsilon_grid: float = 0.0,
+    dimensional_scores: bool = True,
 ) -> Tuple[List[Dict[int, float]], List[Dict[str, object]]]:
     """
     Collect one regional maximum score per rollout and visited base region.
@@ -2337,6 +2891,8 @@ def collect_calibration_scores(
             shield_cfg=shield_cfg,
             terminate_on_unsafe=not continue_after_unsafe,
             score_partition=partition,
+            dimensional_scores=dimensional_scores,
+            certified_local_grid_margin=dimensional_scores,
         )
         raw_regional_scores = dict(out["_regional_scores_raw"])
         calibration_regional_scores = {
@@ -2346,6 +2902,8 @@ def collect_calibration_scores(
         scores.append(calibration_regional_scores)
         out["_calibration_regional_scores_with_epsilon_grid"] = calibration_regional_scores
         diagnostics.append(out)
+        if len(scores) % 10 == 0 or len(scores) == len(init_states):
+            print(f"Collected certified regional scores: {len(scores)}/{len(init_states)} rollouts", flush=True)
     return scores, diagnostics
 
 
@@ -2474,6 +3032,7 @@ def calibrate_mondrian(
     continue_after_unsafe: bool,
     partition: MondrianPartition,
     epsilon_grid: float,
+    dimensional_scores: bool = True,
 ) -> Tuple[MondrianCalibration, Dict[str, object]]:
     """
     Offline Mondrian split-conformal calibration from the revised paper.
@@ -2505,6 +3064,7 @@ def calibrate_mondrian(
         continue_after_unsafe=continue_after_unsafe,
         partition=partition,
         epsilon_grid=epsilon_grid,
+        dimensional_scores=dimensional_scores,
     )
 
     tree_root, parent_by_node = _build_strict_mondrian_tree(partition.n_base_regions)
@@ -2638,13 +3198,21 @@ def calibrate_mondrian(
         "xi_hat_max": float(xi_max),
         "xi_hat_min": float(min(calibration.buffers)),
         "regions": calibration.as_dict()["regions"],
-        "regional_normalized_score_samples": [
+        (
+            "regional_dimensional_score_samples"
+            if dimensional_scores
+            else "regional_normalized_score_samples"
+        ): [
             [float(value) for value in values]
             for values in selected_group_scores
         ],
         "score_normalization": (
-            "eta/(abs(grad_B_dot_heading)+abs(dB_dtheta)); "
-            "deployed xi=q_region*(abs(grad_B_dot_heading)+abs(dB_dtheta))"
+            "none; dimensional eta=[mu]_+; deployed xi=q_region directly"
+            if dimensional_scores
+            else (
+                "eta/(abs(grad_B_dot_heading)+abs(dB_dtheta)); "
+                "deployed xi=q_region*(abs(grad_B_dot_heading)+abs(dB_dtheta))"
+            )
         ),
         "promotion_history": promotion_history,
         "cbvf_activate_margin": float(diag_cfg["cbvf_activate_margin"]),

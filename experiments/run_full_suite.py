@@ -3,12 +3,14 @@
 
 import argparse
 import datetime as dt
+import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import shlex
 import signal
+import shutil
 import subprocess
 import sys
 import traceback
@@ -20,6 +22,17 @@ STATE_PATH = RESULTS / "run_state.json"
 STATUS_PATH = RESULTS / "RUN_STATUS.md"
 FINAL_PATH = RESULTS / "FINAL_REPORT.md"
 LOG_DIR = RESULTS / "logs"
+
+
+def configure_output_paths(manifest):
+    """Select a suite-specific artifact root without overwriting legacy runs."""
+    global RESULTS, STATE_PATH, STATUS_PATH, FINAL_PATH, LOG_DIR
+    configured = Path(manifest.get("results_dir", "results"))
+    RESULTS = configured if configured.is_absolute() else ROOT / configured
+    STATE_PATH = RESULTS / "run_state.json"
+    STATUS_PATH = RESULTS / "RUN_STATUS.md"
+    FINAL_PATH = RESULTS / "FINAL_REPORT.md"
+    LOG_DIR = RESULTS / "logs"
 
 
 def now():
@@ -55,12 +68,15 @@ def expanded_runs(manifest):
                 cfg["training_shield_method"] = method
                 cfg["seed"] = int(seed)
                 cfg["checkpoint_dir"] = str(out)
+                if manifest.get("isolated_cbvf_cache", False):
+                    cfg["cache_dir"] = str(out / "cbvf_cache")
                 command = [py, "train/train_sac_lag.py"]
-                flags = {"dense_safety_cost", "terminate_on_collision", "recompute_cbvf", "no_tqdm"}
                 for key, value in cfg.items():
-                    command.extend([cli_name(key), str(value)])
-                for key in sorted(flags):
-                    command.append(cli_name(key))
+                    if isinstance(value, bool):
+                        if value:
+                            command.append(cli_name(key))
+                    else:
+                        command.extend([cli_name(key), str(value)])
                 command.extend([
                     "--odp-root", str(ROOT),
                     "--solver-file", str(ROOT / "solver_cbvf.py"),
@@ -107,14 +123,15 @@ def render_status(state):
     for r in state["runs"].values():
         counts[r["status"]] = counts.get(r["status"], 0) + 1
     active = state.get("active_run") or "none"
+    manifest_path = state.get("manifest_path", str(ROOT / "experiments" / "full_suite.json"))
     text = """# Mondrian CBVF full-suite run status
 
 Last updated: `{updated}`  
 Suite state: **{suite_status}**  
 Active run: **{active}**  
 tmux session: `{tmux}`  
-Configuration manifest: [`experiments/full_suite.json`](../experiments/full_suite.json)  
-Machine-readable state: [`results/run_state.json`](run_state.json)
+Configuration manifest: `{manifest}`
+Machine-readable state: `run_state.json`
 
 Counts: `{counts}`
 
@@ -124,7 +141,8 @@ Counts: `{counts}`
 
 Each run's exact command, configuration hash, log, and all expected result paths are recorded in `run_state.json`. A failed run remains failed until explicitly retried; completed runs are reused only when their configuration hash and result file match.
 """.format(updated=state["updated"], suite_status=state["status"], active=active,
-           tmux=state.get("tmux_session", "mondrian-full-suite"), counts=json.dumps(counts, sort_keys=True),
+           tmux=state.get("tmux_session", "mondrian-full-suite"), manifest=manifest_path,
+           counts=json.dumps(counts, sort_keys=True),
            rows="\n".join(rows))
     tmp = STATUS_PATH.with_suffix(".md.tmp")
     tmp.write_text(text, encoding="utf-8")
@@ -137,12 +155,13 @@ def save_state(state):
     render_status(state)
 
 
-def initialize(manifest, retry_failed=False):
+def initialize(manifest, retry_failed=False, manifest_path=None):
     prior = json.loads(STATE_PATH.read_text(encoding="utf-8")) if STATE_PATH.exists() else {"runs": {}}
     state = {
         "suite_name": manifest["suite_name"], "status": "queued", "active_run": None,
         "created": prior.get("created", now()), "updated": now(),
         "tmux_session": os.environ.get("MONDRIAN_TMUX_SESSION", "mondrian-full-suite"),
+        "manifest_path": str(manifest_path or (ROOT / "experiments" / "full_suite.json")),
         "manifest_sha256": config_hash(manifest), "order": [], "runs": {},
     }
     for run_id, condition, seed, out, command, digest, payload in expanded_runs(manifest):
@@ -195,9 +214,15 @@ def main():
     parser.add_argument("--initialize-only", action="store_true")
     args = parser.parse_args()
     manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+    configure_output_paths(manifest)
     RESULTS.mkdir(parents=True, exist_ok=True)
+    suite_lock = (RESULTS / "suite.lock").open("a")
+    try:
+        fcntl.flock(suite_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise RuntimeError("Another process already owns this suite; refusing duplicate output writers.")
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    state = initialize(manifest, retry_failed=args.retry_failed)
+    state = initialize(manifest, retry_failed=args.retry_failed, manifest_path=Path(args.manifest).resolve())
     if args.initialize_only:
         state["status"] = "not started"
         save_state(state)
@@ -222,6 +247,11 @@ def main():
             state["active_run"] = run_id
             save_state(state)
             out = Path(r["result_paths"]["result"]).parent
+            if out.exists() and any(out.iterdir()):
+                archive = RESULTS / "attempts" / run_id / dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+                archive.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(out), str(archive))
+                r.setdefault("preserved_attempts", []).append(str(archive))
             out.mkdir(parents=True, exist_ok=True)
             (out / "batch_configuration.json").write_text(json.dumps({
                 "config_sha256": r["config_sha256"], "configuration": r["configuration"],
